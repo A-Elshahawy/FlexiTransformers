@@ -1,0 +1,39 @@
+[project]
+name = "flexitransformers"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.2.1",
+    "torch>=2.4.0",
+]
+
+
+
+[tool.uv.sources]
+pytorch = { index = "pytorch" }
+
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "N", "UP","W", "C4", "RUF", "SIM"]
+ignore = ["UP008", "N812"]
+fixable = ["ALL"]
+
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = 20
+line-ending = "auto"
