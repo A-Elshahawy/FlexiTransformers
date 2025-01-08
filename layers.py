@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 
 import torch
@@ -156,3 +157,21 @@ class DecoderLayer(nn.Module):
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
         x = self.sublayer[1](x, lambda x: self.src_attn(x, m, m, src_mask))
         return self.sublayer[2](x, self.feed_forward)
+
+
+class Embeddings(nn.Module):
+    """
+    Implements token embeddings.
+
+    Args:
+        d_model (int): Model dimension.
+        vocab (int): Vocabulary size.
+    """
+
+    def __init__(self, d_model: int, vocab: int) -> None:
+        super(Embeddings, self).__init__()
+        self.lut = nn.Embedding(vocab, d_model)
+        self.d_model = d_model
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.lut(x) * math.sqrt(self.d_model)

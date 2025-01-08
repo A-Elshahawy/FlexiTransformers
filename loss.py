@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .utils import subsequent_mask
+from utils import subsequent_mask
 
 
 class LabelSmoothing(nn.Module):

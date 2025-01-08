@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from layers import LayerNorm
+from utils import clone
+
 
 class EncoderDecoder(nn.Module):
     """
@@ -75,3 +78,47 @@ class Generator(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return F.log_softmax(self.proj(x), dim=-1)
+
+
+class Encoder(nn.Module):
+    """
+    Core encoder is a stack of N layers.
+
+    Args:
+        layer (nn.Module): Encoder layer module.
+        N (int): Number of layers.
+    """
+
+    def __init__(self, layer: nn.Module, n_layers: int) -> None:
+        super(Encoder, self).__init__()
+        self.layers = clone(layer, n_layers)
+        self.norm = LayerNorm(layer.size)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Pass the input (and mask) through each layer in turn."""
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.norm(x)
+
+
+class Decoder(nn.Module):
+    """
+    Generic N layer decoder with masking.
+
+    Args:
+        layer (nn.Module): Decoder layer module.
+        N (int): Number of layers.
+    """
+
+    def __init__(self, layer: nn.Module, n_layers: int) -> None:
+        super(Decoder, self).__init__()
+        self.layers = clone(layer, n_layers)
+        self.norm = LayerNorm(layer.size)
+
+    def forward(
+        self, x: torch.Tensor, memory: torch.Tensor, src_mask: torch.Tensor, tgt_mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Pass the input (and mask) through each layer in turn."""
+        for layer in self.layers:
+            x = layer(x, memory, src_mask, tgt_mask)
+        return self.norm(x)

@@ -1,13 +1,13 @@
 from .attention import MultiHeadedAttention
 from .core import EncoderDecoder, Generator
-from .embeddings import (
+from .layers import LayerNorm, PositionwiseFeedForward, SublayerConnection
+from .loss import LabelSmoothing, LossCompute, greedy_decode
+from .pos_embeddings import (
     ALiBiPositionalEncoding,
     RelativePositionalEncoding,
     RotaryPositionalEncoding,
     SinaoidalPositionalEncoding,
 )
-from .layers import LayerNorm, PositionwiseFeedForward, SublayerConnection
-from .loss import LabelSmoothing, LossCompute, greedy_decode
 from .training import Batch, TrainState, lr_step, run_epoch
 from .utils import clone, subsequent_mask
 

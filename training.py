@@ -2,8 +2,15 @@ import time
 from collections.abc import Callable
 
 import torch
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
-from .utils import subsequent_mask
+from utils import subsequent_mask
 
 
 class Batch:
@@ -68,7 +75,8 @@ def run_epoch(
     scheduler,
     mode: str = 'train',
     accum_iter: int = 1,
-    train_state: TrainState | None = None,
+    train_state: 'TrainState | None' = None,
+    total_batches: int | None = None,
 ):
     """
     Train or evaluate a single epoch.
@@ -82,48 +90,72 @@ def run_epoch(
         mode (str): Mode of operation ("train", "eval", "train+log"). Default: "train".
         accum_iter (int): Gradient accumulation steps. Default: 1.
         train_state (TrainState): Training state tracker. Default: TrainState().
+        total_batches (int): Total number of batches for the progress bar.
 
     Returns:
         tuple[float, TrainState]: Average loss and updated training state.
     """
     train_state = train_state or TrainState()
-    start = time.time()
     total_tokens = 0
     total_loss = 0
     tokens = 0
     n_accum = 0
-    for i, batch in enumerate(data_iter):
-        out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
-        loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
-        if mode == 'train' or mode == 'train+log':
-            loss_node.backward()
-            train_state.step += 1
-            train_state.samples += batch.src.shape[0]
-            train_state.tokens += batch.ntokens
-            if i % accum_iter == 0:
-                optimizer.step()
-                optimizer.zero_grad(set_to_none=True)
-                n_accum += 1
-                train_state.accum_step += 1
-            scheduler.step()
+    start_time = time.time()
 
-        total_loss += loss
-        total_tokens += batch.ntokens
-        tokens += batch.ntokens
-        if i % 40 == 1 and (mode == 'train' or mode == 'train+log'):
-            lr = optimizer.param_groups[0]['lr']
-            elapsed = time.time() - start
-            print(
-                (
-                    'Epoch Step: %6d | Accumulation Step: %3d | Loss: %6.2f '
-                    + '| Tokens / Sec: %7.1f | Learning Rate: %6.1e'
+    # Initialize progress bar
+    progress = Progress(
+        TextColumn('[bold blue]{task.description}'),
+        BarColumn(),
+        TextColumn('[progress.percentage]{task.percentage:>3.0f}%'),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    )
+
+    with progress:
+        task = progress.add_task(
+            description=f'⚡ {mode.capitalize()}',
+            total=total_batches,
+        )
+
+        for i, batch in enumerate(data_iter):
+            out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
+            loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+
+            if mode.startswith('train'):
+                loss_node.backward()
+                train_state.step += 1
+                train_state.samples += batch.src.shape[0]
+                train_state.tokens += batch.ntokens
+                if i % accum_iter == 0:
+                    optimizer.step()
+                    optimizer.zero_grad(set_to_none=True)
+                    n_accum += 1
+                    train_state.accum_step += 1
+                scheduler.step()
+
+            total_loss += loss
+            total_tokens += batch.ntokens
+            tokens += batch.ntokens
+
+            # Update progress bar
+            tokens_per_sec = tokens / (time.time() - start_time)
+            if mode.startswith('train'):
+                lr = optimizer.param_groups[0]['lr']
+                progress.update(
+                    task,
+                    advance=1,
+                    description=f'⚡ {mode.capitalize()} • {i + 1}/{total_batches} • Loss: {loss / batch.ntokens:.3f} • LR: {lr:.2e} • speed: {tokens_per_sec:.0f}t/s',  # noqa: E501
                 )
-                % (i, n_accum, loss / batch.ntokens, tokens / elapsed, lr)
-            )
-            start = time.time()
-            tokens = 0
-        del loss
-        del loss_node
+            else:
+                progress.update(
+                    task,
+                    advance=1,
+                    description=f'⚡ {mode.capitalize()} • {i + 1}/{total_batches} • Loss: {loss / batch.ntokens:.3f} • speed: {tokens_per_sec:.0f}t/s',  # noqa: E501
+                )
+
+            del loss
+            del loss_node
+
     return total_loss / total_tokens, train_state
 
 

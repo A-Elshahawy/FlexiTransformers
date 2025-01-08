@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv/
 test.py
+hello.py
 .python-version
 .ruff_cache/
 .mypy_cache/

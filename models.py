@@ -1,11 +1,25 @@
-import copy
+from copy import deepcopy
+from enum import Enum, auto
 
+import torch
 import torch.nn as nn
 
-from .attention import MultiHeadedAttention
-from .core import Decoder, Encoder, EncoderDecoder, Generator
-from .embeddings import Embeddings, Sinaoidal_Positional_Encoding
-from .layers import DecoderLayer, EncoderLayer, Position_wise_Feed_Forward
+from attention import MultiHeadedAttention
+from core import Decoder, Encoder, EncoderDecoder, Generator
+from layers import DecoderLayer, Embeddings, EncoderLayer, PositionwiseFeedForward
+from pos_embeddings import (
+    ALiBiPositionalEncoding,
+    RelativePositionalEncoding,
+    RotaryPositionalEncoding,
+    SinusoidalPositionalEncoding,
+)
+
+
+class PositionalEncoding(Enum):
+    SINUSOIDAL = auto()
+    RELATIVE = auto()
+    ROTARY = auto()
+    ALIBI = auto()
 
 
 def make_model(
@@ -17,58 +31,33 @@ def make_model(
     n_heads: int = 8,
     dropout: float = 0.1,
     positional_encoding: str = 'sinusoidal',
-) -> EncoderDecoder:
-    """
-    Construct a transformer model from hyperparameters.
+) -> 'EncoderDecoder':
+    """Construct a transformer model from hyperparameters."""
+    c = deepcopy
 
-    Args:
-        src_vocab (int): Size of the source vocabulary.
-        tgt_vocab (int): Size of the target vocabulary.
-        n_layers (int): Number of encoder/decoder layers. Default: 6.
-        d_model (int): Model dimension. Default: 512.
-        d_ff (int): Feed-forward dimension. Default: 2048.
-        n_heads (int): Number of attention heads. Default: 8.
-        dropout (float): Dropout probability. Default: 0.1.
-        positional_encoding (str): Type of positional encoding.
-            Options: "sinusoidal", "relative", "rotary", "alibi". Default: "sinusoidal".
+    pos_encodings = {
+        'sinusoidal': SinusoidalPositionalEncoding,
+        'relative': RelativePositionalEncoding,
+        'rotary': RotaryPositionalEncoding,
+        'alibi': ALiBiPositionalEncoding,
+    }
 
-    Returns:
-        EncoderDecoder: A transformer model.
-    """
-    c = copy.deepcopy
+    if positional_encoding not in pos_encodings:
+        raise ValueError(f'Unknown positional encoding: {positional_encoding}')
 
-    # Create positional encoding
-    match positional_encoding:
-        case 'sinusoidal':
-            position = Sinaoidal_Positional_Encoding(d_model, dropout)
-        # case "relative":
-        #     position = Relative_Positional_Encoding(d_model)
-        # case "rotary":
-        #     position = Rotary_Positional_Encoding(d_model)
-        # case "alibi":
-        # position = Alibi_Positional_Encoding(d_model)
-        case _:
-            raise ValueError(f'Unknown positional encoding: {positional_encoding}')
-
-    # Create attention and feed-forward layers
+    position = pos_encodings[positional_encoding](d_model, dropout)
     attn = MultiHeadedAttention(n_heads, d_model)
-    ff = Position_wise_Feed_Forward(d_model, d_ff, dropout)
+    ff = PositionwiseFeedForward(d_model, d_ff, dropout)
 
-    # Create encoder and decoder
     encoder = Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), n_layers)
     decoder = Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), n_layers)
 
-    # Create embeddings
     src_embed = nn.Sequential(Embeddings(d_model, src_vocab), c(position))
     tgt_embed = nn.Sequential(Embeddings(d_model, tgt_vocab), c(position))
-
-    # Create generator
     generator = Generator(d_model, tgt_vocab)
 
-    # Initialize model
     model = EncoderDecoder(encoder, decoder, src_embed, tgt_embed, generator)
 
-    # Initialize parameters with Glorot / fan_avg
     for p in model.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
@@ -76,37 +65,88 @@ def make_model(
     return model
 
 
-class OptimusTransformer(nn.Module):
-    def __init__(self, src_vocab, tgt_vocab, **kwargs):
-        super(OptimusTransformer, self).__init__()
-        self.model = make_model(src_vocab, tgt_vocab, positional_encoding='sinusoidal', **kwargs)
+class BaseTransformer(nn.Module):
+    """Base transformer model with configurable positional encoding."""
 
-    def forward(self, src, tgt, src_mask, tgt_mask):
-        return self.model(src, tgt, src_mask, tgt_mask)
+    def __init__(
+        self,
+        src_vocab: int,
+        tgt_vocab: int,
+        n_layers: int = 6,
+        d_model: int = 512,
+        d_ff: int = 2048,
+        n_heads: int = 8,
+        dropout: float = 0.1,
+        pos_encoding: PositionalEncoding = PositionalEncoding.SINUSOIDAL,
+    ) -> None:
+        super().__init__()
+        pos_encoding_map = {
+            PositionalEncoding.SINUSOIDAL: 'sinusoidal',
+            PositionalEncoding.RELATIVE: 'relative',
+            PositionalEncoding.ROTARY: 'rotary',
+            PositionalEncoding.ALIBI: 'alibi',
+        }
+
+        self.model = make_model(
+            src_vocab,
+            tgt_vocab,
+            n_layers=n_layers,
+            d_model=d_model,
+            d_ff=d_ff,
+            n_heads=n_heads,
+            dropout=dropout,
+            positional_encoding=pos_encoding_map[pos_encoding],
+        )
+
+    def forward(
+        self,
+        src: torch.Tensor,
+        tgt: torch.Tensor,
+        src_mask: torch.Tensor,
+        tgt_mask: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        return self.model(src, tgt, src_mask, tgt_mask, **kwargs)
+
+    def encode(self, src: torch.Tensor, src_mask: torch.Tensor, **kwargs) -> torch.Tensor:
+        return self.model.encode(src, src_mask, **kwargs)
+
+    def decode(
+        self,
+        memory: torch.Tensor,
+        src_mask: torch.Tensor,
+        tgt: torch.Tensor,
+        tgt_mask: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        return self.model.decode(memory, src_mask, tgt, tgt_mask, **kwargs)
+
+    def generator(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model.generator(x)
 
 
-class BumblebeeTransformer(nn.Module):
-    def __init__(self, src_vocab, tgt_vocab, **kwargs):
-        super(BumblebeeTransformer, self).__init__()
-        self.model = make_model(src_vocab, tgt_vocab, positional_encoding='alibi', **kwargs)
+class OptimusTransformer(BaseTransformer):
+    """Standard transformer with sinusoidal positional encoding."""
 
-    def forward(self, src, tgt, src_mask, tgt_mask):
-        return self.model(src, tgt, src_mask, tgt_mask)
+    pass
 
 
-class MegatronTransformer(nn.Module):
-    def __init__(self, src_vocab, tgt_vocab, **kwargs):
-        super(MegatronTransformer, self).__init__()
-        self.model = make_model(src_vocab, tgt_vocab, positional_encoding='relative', **kwargs)
+class BumblebeeTransformer(BaseTransformer):
+    """Transformer variant with ALiBi positional encoding."""
 
-    def forward(self, src, tgt, src_mask, tgt_mask):
-        return self.model(src, tgt, src_mask, tgt_mask)
+    def __init__(self, src_vocab: int, tgt_vocab: int, **kwargs) -> None:
+        super().__init__(src_vocab, tgt_vocab, pos_encoding=PositionalEncoding.ALIBI, **kwargs)
 
 
-class MirageTransformer(nn.Module):
-    def __init__(self, src_vocab, tgt_vocab, **kwargs):
-        super(MirageTransformer, self).__init__()
-        self.model = make_model(src_vocab, tgt_vocab, positional_encoding='rotary', **kwargs)
+class MegatronTransformer(BaseTransformer):
+    """Transformer variant with relative positional encoding."""
 
-    def forward(self, src, tgt, src_mask, tgt_mask):
-        return self.model(src, tgt, src_mask, tgt_mask)
+    def __init__(self, src_vocab: int, tgt_vocab: int, **kwargs) -> None:
+        super().__init__(src_vocab, tgt_vocab, pos_encoding=PositionalEncoding.RELATIVE, **kwargs)
+
+
+class MirageTransformer(BaseTransformer):
+    """Transformer variant with rotary positional encoding."""
+
+    def __init__(self, src_vocab: int, tgt_vocab: int, **kwargs) -> None:
+        super().__init__(src_vocab, tgt_vocab, pos_encoding=PositionalEncoding.ROTARY, **kwargs)
