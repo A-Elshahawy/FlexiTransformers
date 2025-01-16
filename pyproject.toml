@@ -1,7 +1,14 @@
 [project]
-name = "flexitransformers"
+name = "flexi_transformers"
 version = "0.1.0"
-description = "Add your description here"
+description = """
+            This repository provides a flexible and modular implementation of the Transformer architecture,
+            supporting various positional encoding mechanisms and attention mechanisms.
+            The library is designed to be easily extensible,
+            allowing users to experiment with different configurations
+            and components of the Transformer model.
+            """
+
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
