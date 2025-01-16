@@ -174,4 +174,4 @@ class Embeddings(nn.Module):
         self.d_model = d_model
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.lut(x) * math.sqrt(self.d_model)
+        return self.lut(x.to(self.lut.weight.device)) * math.sqrt(self.d_model)

@@ -18,7 +18,7 @@ def clone(module: nn.Module, n_clones: int) -> nn.ModuleList:
     return nn.ModuleList([copy.deepcopy(module) for _ in range(n_clones)])
 
 
-def subsequent_mask(size: int) -> torch.Tensor:
+def subsequent_mask(size: int, device: str = 'cpu') -> torch.Tensor:
     """
     Create a mask to hide future positions.
 
@@ -29,5 +29,7 @@ def subsequent_mask(size: int) -> torch.Tensor:
         torch.Tensor: Subsequent mask tensor.
     """
     attn_shape = (1, size, size)
-    subsequent_mask = torch.triu(torch.ones(attn_shape), diagonal=1).type(torch.uint8)
+    subsequent_mask = torch.triu(torch.ones(attn_shape, device=device), diagonal=1).type(
+        torch.uint8
+    )
     return subsequent_mask == 0

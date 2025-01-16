@@ -58,7 +58,7 @@ class LossCompute:
 
 
 def greedy_decode(
-    model, src: torch.Tensor, src_mask: torch.Tensor, max_len: int, start_symbol: int
+    model: nn.Module, src: torch.Tensor, src_mask: torch.Tensor, max_len: int, start_symbol: int
 ) -> torch.Tensor:
     """
     Perform greedy decoding.
@@ -73,12 +73,16 @@ def greedy_decode(
     Returns:
         torch.Tensor: Decoded sequence.
     """
-    memory = model.encode(src, src_mask)
-    ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data)
+    device = src.device
+    memory = model.encode(src.to(device), src_mask.to(device))
+    ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src).to(device)
+
     for _ in range(max_len - 1):
-        out = model.decode(memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data))
+        mask = subsequent_mask(ys.size(1)).type_as(src.data).to(device)
+        out = model.decode(memory, src_mask.to(device), ys, mask)
         prob = model.generator(out[:, -1])
         _, next_word = torch.max(prob, dim=1)
         next_word = next_word.data[0]
-        ys = torch.cat([ys, torch.zeros(1, 1).type_as(src.data).fill_(next_word)], dim=1)
+        ys = torch.cat([ys, torch.zeros(1, 1).type_as(src.data).fill_(next_word).to(device)], dim=1)
+
     return ys

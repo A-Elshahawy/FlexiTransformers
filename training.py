@@ -9,6 +9,7 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
+from torch.utils.data import DataLoader
 
 from utils import subsequent_mask
 
@@ -24,13 +25,15 @@ class Batch:
 
     """
 
-    def __init__(self, src: torch.Tensor, tgt: torch.Tensor | None = None, pad: int = 2) -> None:
-        self.src = src
-        self.src_mask = (src != pad).unsqueeze(-2)
+    def __init__(
+        self, src: torch.Tensor, tgt: torch.Tensor | None = None, device: str = 'cpu', pad: int = 2
+    ) -> None:
+        self.src = src.to(device)
+        self.src_mask = (src != pad).unsqueeze(-2).to(device)
         if tgt is not None:
-            self.tgt = tgt[:, :-1]
-            self.tgt_y = tgt[:, 1:]
-            self.tgt_mask = self.make_std_mask(self.tgt, pad)
+            self.tgt = tgt[:, :-1].to(device)
+            self.tgt_y = tgt[:, 1:].to(device)
+            self.tgt_mask = self.make_std_mask(self.tgt, pad).to(device)
             self.ntokens = (self.tgt_y != pad).data.sum()
 
     @staticmethod
@@ -68,11 +71,11 @@ class TrainState:
 
 
 def run_epoch(
-    data_iter,
-    model,
+    data_iter: DataLoader,
+    model: torch.nn.Module,
     loss_compute: Callable,
-    optimizer,
-    scheduler,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler._LRScheduler,
     mode: str = 'train',
     accum_iter: int = 1,
     train_state: 'TrainState | None' = None,

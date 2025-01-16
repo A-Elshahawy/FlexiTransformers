@@ -1,18 +1,18 @@
-from .attention import MultiHeadedAttention
+from .attention import MultiHeadedAttention, RelativeGlobalAttention
 from .core import EncoderDecoder, Generator
 from .layers import LayerNorm, PositionwiseFeedForward, SublayerConnection
 from .loss import LabelSmoothing, LossCompute, greedy_decode
 from .pos_embeddings import (
+    AbsolutePositionalEncoding,
     ALiBiPositionalEncoding,
-    RelativePositionalEncoding,
     RotaryPositionalEncoding,
-    SinaoidalPositionalEncoding,
 )
 from .training import Batch, TrainState, lr_step, run_epoch
 from .utils import clone, subsequent_mask
 
 __all__ = [
     'ALiBiPositionalEncoding',
+    'AbsolutePositionalEncoding',
     'Batch',
     'EncoderDecoder',
     'Generator',
@@ -21,9 +21,8 @@ __all__ = [
     'LossCompute',
     'MultiHeadedAttention',
     'PositionwiseFeedForward',
-    'RelativePositionalEncoding',
+    'RelativeGlobalAttention',
     'RotaryPositionalEncoding',
-    'SinaoidalPositionalEncoding',
     'SublayerConnection',
     'TrainState',
     'clone',

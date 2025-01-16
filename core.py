@@ -25,6 +25,7 @@ class EncoderDecoder(nn.Module):
         src_embed: nn.Module,
         tgt_embed: nn.Module,
         generator: nn.Module,
+        device='cpu',
     ) -> None:
         super(EncoderDecoder, self).__init__()
         self.encoder = encoder
@@ -32,6 +33,12 @@ class EncoderDecoder(nn.Module):
         self.src_embed = src_embed
         self.tgt_embed = tgt_embed
         self.generator = generator
+        self.device = device
+
+    def to(self, device):
+        super().to(device)
+        self.device = device
+        return self
 
     def forward(
         self, src: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor, tgt_mask: torch.Tensor

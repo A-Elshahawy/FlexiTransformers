@@ -28,13 +28,6 @@ function run_checks() {
  fi
 
 
- # Run bandit
-#  echo "Running security checks..."
-#  if ! bandit -r .; then
-#    echo -e "${RED}❌ Security checks failed${NC}"
-#    errors=$((errors + 1)) 
-#  fi
-
  if [ $errors -gt 0 ]; then
    echo -e "${RED}Found $errors error(s)${NC}"
    play_error_sound
