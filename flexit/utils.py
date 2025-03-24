@@ -1,3 +1,10 @@
+"""
+Utility Functions
+
+This module implements various utility functions used throughout the transformer library,
+including layer cloning, mask creation, and other helper functions.
+"""
+
 import copy
 
 import torch
@@ -20,7 +27,8 @@ def clone(module: nn.Module, n_clones: int) -> nn.ModuleList:
 
 def subsequent_mask(size: int, device: str = 'cpu') -> torch.Tensor:
     """
-    Create a mask to hide future positions.
+    Create a mask to hide future positions `Causal mask`.
+
 
     Args:
         size (int): Size of the mask.
