@@ -7,10 +7,12 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv/
-test.py
-hello.py
-.python-version
-.ruff_cache/
-.mypy_cache/
-.pre-commit-config.yaml
+.venv
+
+# python files
+*.pyc
+*.pyo
+main.py
+*.txt
+```
+.qodo

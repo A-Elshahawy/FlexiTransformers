@@ -5,9 +5,6 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-# Sound configuration 
-# ERROR_SOUND="/usr/share/sounds/freedesktop/stereo/dialog-error.oga"
-# ERROR_SOUND="C:\Users\aelsh\Downloads\Music\wahwa.mp3"
 function play_error_sound() {
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
         powershell -c "(New-Object System.Media.SoundPlayer).Stream=(New-Object System.IO.MemoryStream (,[System.IO.File]::ReadAllBytes('$ERROR_SOUND'))); (New-Object System.Media.SoundPlayer).PlaySync()"
