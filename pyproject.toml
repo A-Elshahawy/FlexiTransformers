@@ -51,8 +51,8 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/A-Elshahawy/flexitransformers"
-"Bug Tracker" = "https://github.com/A-Elshahawy/flexitransformers/issues"
+"Homepage" = "https://github.com/A-Elshahawy/FlexiTransformers"
+"Bug Tracker" = "https://github.com/A-Elshahawy/FlexiTransformers/issues"
 
 # Correct package structure based on directory layout
 [tool.setuptools]
