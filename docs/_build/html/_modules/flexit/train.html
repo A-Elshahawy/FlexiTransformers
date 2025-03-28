@@ -1,0 +1,1083 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flexit.train &mdash; FlexiTransformers 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlexiTransformers
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Package Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">flexit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlexiTransformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flexit.train</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flexit.train</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module implements training utilities including batch processing,</span>
+<span class="sd">learning rate scheduling, training state tracking, and the main training loop.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">Console</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Panel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.progress</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BarColumn</span><span class="p">,</span>
+    <span class="n">MofNCompleteColumn</span><span class="p">,</span>
+    <span class="n">Progress</span><span class="p">,</span>
+    <span class="n">SpinnerColumn</span><span class="p">,</span>
+    <span class="n">TextColumn</span><span class="p">,</span>
+    <span class="n">TimeElapsedColumn</span><span class="p">,</span>
+    <span class="n">TimeRemainingColumn</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models_heads</span><span class="w"> </span><span class="kn">import</span> <span class="n">greedy_decode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">subsequent_mask</span>
+
+
+<div class="viewcode-block" id="Batch">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Batch">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Batch</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Unified batch handling for all transformer architectures.</span>
+<span class="sd">    Handles encoder-decoder, decoder-only, and encoder-only (BERT) models.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        src (torch.Tensor): Source sequence.</span>
+<span class="sd">        tgt (torch.Tensor): Target sequence.</span>
+<span class="sd">        labels (torch.Tensor): Classification labels.</span>
+<span class="sd">        src_mask (torch.Tensor): Source mask.</span>
+<span class="sd">        tgt_mask (torch.Tensor): Target mask.</span>
+<span class="sd">        ntokens (int): Number of tokens in the batch.</span>
+<span class="sd">        model_type (Literal): Type of transformer architecture.</span>
+<span class="sd">        device (str): Computation device.</span>
+<span class="sd">        pad (int): Padding token ID.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        _validate_inputs: Validate input tensors based on model type.</span>
+<span class="sd">        __init_encoder_only: Initialize for encoder-only models.</span>
+<span class="sd">        __init_decoder_only: Initialize for decoder-only models.</span>
+<span class="sd">        __init_decoder_decoder: Initialize for encoder-decoder models.</span>
+<span class="sd">        to: Move batch to device.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tgt</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span><span class="p">,</span>
+        <span class="n">pad</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;encoder-only&#39;</span><span class="p">,</span> <span class="s1">&#39;decoder-only&#39;</span><span class="p">,</span> <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize batch with appropriate tensors and masks based on model type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src: Input tensor (source sequences or input tokens)</span>
+<span class="sd">            tgt: Target sequences for seq2seq tasks</span>
+<span class="sd">            labels: Classification labels for BERT-style tasks</span>
+<span class="sd">            device: Computation device</span>
+<span class="sd">            pad: Padding token ID</span>
+<span class="sd">            model_type: Type of transformer architecture</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_inputs</span><span class="p">(</span><span class="n">tgt</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">model_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">=</span> <span class="n">model_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pad</span> <span class="o">=</span> <span class="n">pad</span>
+
+        <span class="k">match</span> <span class="n">model_type</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__init_decoder_decoder</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">tgt</span><span class="p">)</span>
+            <span class="k">case</span> <span class="s1">&#39;encoder-only&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__init_encoder_only</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+            <span class="k">case</span> <span class="s1">&#39;decoder-only&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__init_decoder_only</span><span class="p">(</span><span class="n">tgt</span> <span class="k">if</span> <span class="n">tgt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">src</span><span class="p">)</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid model type: </span><span class="si">{</span><span class="n">model_type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Batch._validate_inputs">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Batch._validate_inputs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_inputs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tgt</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">model_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate input tensors based on model type.</span>
+<span class="sd">        Checks that the necessary input tensors are provided based on the model type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tgt: Target sequences</span>
+<span class="sd">            labels: Classification labels</span>
+<span class="sd">            model_type: Type of transformer architecture</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If required tensors are not provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;encoder-decoder&#39;</span> <span class="ow">and</span> <span class="n">tgt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Target sequence required for encoder-decoder models&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;encoder-only&#39;</span> <span class="ow">and</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Labels required for encoder-only (BERT) models&#39;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_encoder_only</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize for encoder-only (BERT-style) models.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">src</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ntokens</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_decoder_only</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sequence</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize for decoder-only (GPT Style) models using a single input sequence.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tgt</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tgt_y</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tgt_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_std_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ntokens</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt_y</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_decoder_decoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">tgt</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize for encoder-decoder (Transformer) models.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">src</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tgt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tgt</span> <span class="o">=</span> <span class="n">tgt</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tgt_y</span> <span class="o">=</span> <span class="n">tgt</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tgt_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_std_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ntokens</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tgt_y</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Batch.make_std_mask">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Batch.make_std_mask">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_std_mask</span><span class="p">(</span><span class="n">tgt</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">pad</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a mask to hide padding and future words.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tgt (torch.Tensor): Target sequence</span>
+<span class="sd">            pad (int): Padding token index</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Target mask</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tgt_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">tgt</span> <span class="o">!=</span> <span class="n">pad</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">tgt_mask</span> <span class="o">=</span> <span class="n">tgt_mask</span> <span class="o">&amp;</span> <span class="n">subsequent_mask</span><span class="p">(</span><span class="n">tgt</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">tgt_mask</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tgt_mask</span></div>
+
+
+<div class="viewcode-block" id="Batch.to">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Batch.to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Batch&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move batch to device.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="lr_step">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.lr_step">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">lr_step</span><span class="p">(</span><span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">model_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">warmup</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the learning rate based on the step, model size, factor, and warmup.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step (int): Current step.</span>
+<span class="sd">        model_size (int): Model dimension.</span>
+<span class="sd">        factor (float): Scaling factor.</span>
+<span class="sd">        warmup (int): Warmup steps.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float: Computed learning rate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">model_size</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">step</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">),</span> <span class="n">step</span> <span class="o">*</span> <span class="n">warmup</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">))))</span></div>
+
+
+
+<div class="viewcode-block" id="create_progress_bar">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.create_progress_bar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_progress_bar</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Progress</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an enhanced progress bar with comprehensive metrics.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Progress</span><span class="p">(</span>
+        <span class="n">SpinnerColumn</span><span class="p">(),</span>
+        <span class="n">TextColumn</span><span class="p">(</span><span class="s1">&#39;[bold blue]</span><span class="si">{task.description}</span><span class="s1">&#39;</span><span class="p">),</span>
+        <span class="n">BarColumn</span><span class="p">(</span><span class="n">bar_width</span><span class="o">=</span><span class="mi">40</span><span class="p">),</span>
+        <span class="n">MofNCompleteColumn</span><span class="p">(),</span>
+        <span class="n">TextColumn</span><span class="p">(</span><span class="s1">&#39;•&#39;</span><span class="p">),</span>
+        <span class="n">TimeElapsedColumn</span><span class="p">(),</span>
+        <span class="n">TextColumn</span><span class="p">(</span><span class="s1">&#39;•&#39;</span><span class="p">),</span>
+        <span class="n">TimeRemainingColumn</span><span class="p">(),</span>
+        <span class="n">console</span><span class="o">=</span><span class="n">Console</span><span class="p">(),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TrainState">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainState">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrainState</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track number of steps, examples, and tokens processed&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Steps in the current epoch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accum_step</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Number of gradient accumulation steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># total # of examples used</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># total # of tokens processed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># current epoch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens_per_sec</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
+
+<div class="viewcode-block" id="TrainState.update">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainState.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ntokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TrainState&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update training state with batch statistics.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            batch_size (int): Number of samples in the batch</span>
+<span class="sd">            ntokens (int): Number of tokens in the batch</span>
+<span class="sd">            loss (float): Loss value for the batch</span>
+<span class="sd">            lr (float): Current learning rate</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainState: The updated training state instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples</span> <span class="o">+=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">+=</span> <span class="n">ntokens</span>
+
+        <span class="c1"># Calculate tokens per second</span>
+        <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+        <span class="k">if</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tokens_per_sec</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokens</span> <span class="o">/</span> <span class="n">elapsed</span><span class="p">)</span>
+
+        <span class="c1"># You can save additional metrics here if needed</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="TrainState.save">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainState.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save training state to a file&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">:</span>
+            <span class="n">metrics_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s1">&#39;training_metrics.json&#39;</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
+                <span class="s1">&#39;accum_step&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">accum_step</span><span class="p">,</span>
+                <span class="s1">&#39;samples&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span>
+                <span class="s1">&#39;tokens&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens</span><span class="p">,</span>
+                <span class="s1">&#39;tokens_per_sec&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens_per_sec</span><span class="p">,</span>
+                <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">metrics_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="run_epoch">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.run_epoch">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_epoch</span><span class="p">(</span>
+    <span class="n">data_iter</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+    <span class="n">loss_compute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">_LRScheduler</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;train&#39;</span><span class="p">,</span> <span class="s1">&#39;eval&#39;</span><span class="p">,</span> <span class="s1">&#39;train+log&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;train&#39;</span><span class="p">,</span>
+    <span class="n">accum_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">max_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">train_state</span><span class="p">:</span> <span class="n">TrainState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">,</span>
+    <span class="n">save_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">TrainState</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enhanced training/evaluation pipeline with comprehensive monitoring.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_iter: Data iterator</span>
+<span class="sd">        model: Neural network model</span>
+<span class="sd">        loss_compute: Loss computation function</span>
+<span class="sd">        optimizer: Optimization algorithm</span>
+<span class="sd">        scheduler: Learning rate scheduler</span>
+<span class="sd">        mode: Training mode (&#39;train&#39;, &#39;eval&#39;, &#39;train+log&#39;)</span>
+<span class="sd">        accum_iter: Gradient accumulation steps</span>
+<span class="sd">        train_state: Training state tracker</span>
+<span class="sd">        device: Computation device</span>
+<span class="sd">        save_dir: Directory to save metrics</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple[float, TrainingState]: (average_loss, updated_metrics)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">train_state</span> <span class="o">=</span> <span class="n">train_state</span> <span class="ow">or</span> <span class="n">TrainState</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Set model mode</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">))</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">set_grad_enabled</span><span class="p">(</span><span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">))</span>
+
+    <span class="n">progress</span> <span class="o">=</span> <span class="n">create_progress_bar</span><span class="p">()</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data_iter</span><span class="p">),</span> <span class="n">max_batches</span><span class="p">)</span> <span class="k">if</span> <span class="n">max_batches</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_iter</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">progress</span><span class="p">:</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Epoch </span><span class="si">{</span><span class="n">train_state</span><span class="o">.</span><span class="n">epoch</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">batch</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_iter</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">max_batches</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">max_batches</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="n">batch</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+                <span class="c1"># Forward pass based on model architecture</span>
+                <span class="k">if</span> <span class="n">batch</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;encoder-only&#39;</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">src_mask</span><span class="p">)</span>
+                    <span class="n">loss</span><span class="p">,</span> <span class="n">loss_node</span> <span class="o">=</span> <span class="n">loss_compute</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">batch</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;decoder-only&#39;</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">tgt</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">tgt</span><span class="p">,</span> <span class="n">tgt_mask</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">tgt_mask</span><span class="p">)</span>
+                    <span class="n">loss</span><span class="p">,</span> <span class="n">loss_node</span> <span class="o">=</span> <span class="n">loss_compute</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">tgt_y</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Standard encoder-decoder</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">src</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">tgt</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">src_mask</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">tgt_mask</span><span class="p">)</span>
+                    <span class="n">loss</span><span class="p">,</span> <span class="n">loss_node</span> <span class="o">=</span> <span class="n">loss_compute</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">tgt_y</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span><span class="p">)</span>
+
+                <span class="c1"># Training step</span>
+                <span class="k">if</span> <span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">):</span>
+                    <span class="n">loss_node</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">accum_iter</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                        <span class="n">train_state</span><span class="o">.</span><span class="n">accum_step</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">scheduler</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+                <span class="c1"># Update metrics</span>
+                <span class="n">batch_loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">/</span> <span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span>
+                <span class="n">current_lr</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+
+                <span class="n">train_state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">src</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="s1">&#39;src&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">batch</span><span class="o">.</span><span class="n">tgt</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+                    <span class="n">ntokens</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span><span class="p">,</span>
+                    <span class="n">loss</span><span class="o">=</span><span class="n">batch_loss</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+                    <span class="n">lr</span><span class="o">=</span><span class="n">current_lr</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span>
+                <span class="n">tokens</span> <span class="o">+=</span> <span class="n">batch</span><span class="o">.</span><span class="n">ntokens</span>
+
+                <span class="c1"># Update progress display</span>
+                <span class="n">progress_desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;⚡ </span><span class="si">{</span><span class="n">mode</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s1"> • Loss: </span><span class="si">{</span><span class="n">batch_loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span>
+
+                <span class="k">if</span> <span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">):</span>
+                    <span class="n">progress_desc</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; • LR: </span><span class="si">{</span><span class="n">current_lr</span><span class="si">:</span><span class="s1">.2e</span><span class="si">}</span><span class="s1">&#39;</span>
+
+                <span class="n">progress_desc</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39; • Speed: </span><span class="si">{</span><span class="n">train_state</span><span class="o">.</span><span class="n">tokens_per_sec</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> tokens/sec&#39;</span>
+                <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">progress_desc</span><span class="p">)</span>
+
+                <span class="c1"># Cleanup</span>
+                <span class="k">del</span> <span class="n">loss</span>
+                <span class="k">del</span> <span class="n">loss_node</span>
+
+        <span class="c1"># Save metrics if directory provided</span>
+        <span class="k">if</span> <span class="n">save_dir</span> <span class="ow">and</span> <span class="n">mode</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;train&#39;</span><span class="p">):</span>
+            <span class="n">train_state</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">save_dir</span><span class="p">))</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error during </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">raise</span>
+
+    <span class="k">return</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">train_state</span></div>
+
+
+
+<div class="viewcode-block" id="TrainerMetrics">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainerMetrics">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrainerMetrics</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track and manage training metrics across epochs.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        epochs (list[int]): List of epochs.</span>
+<span class="sd">        train_losses (list[float]): Training losses recorded for each epoch.</span>
+<span class="sd">        val_losses (list[float]): Validation losses recorded for each epoch.</span>
+<span class="sd">        train_times (list[float]): Time taken for training in each epoch.</span>
+<span class="sd">        learning_rates (list[float]): Learning rates used in each epoch.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        update(train_loss, val_loss, epoch_time, lr, epoch):</span>
+<span class="sd">            Update metrics with the latest epoch data.</span>
+
+<span class="sd">        to_dict() -&gt; dict[str, Any]:</span>
+<span class="sd">            Convert the metrics to a dictionary format.</span>
+
+<span class="sd">        from_dict(data) -&gt; TrainerMetrics:</span>
+<span class="sd">            Create a TrainerMetrics object from a dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">epochs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">train_losses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">val_losses</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">train_times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">learning_rates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TrainerMetrics.update">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainerMetrics.update">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">val_loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">epoch_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update metrics with the latest epoch data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            train_loss (float): The training loss for the epoch.</span>
+<span class="sd">            val_loss (float): The validation loss for the epoch.</span>
+<span class="sd">            epoch_time (float): The time taken for the epoch.</span>
+<span class="sd">            lr (float): The learning rate used for the epoch.</span>
+<span class="sd">            epoch (int): The current epoch number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">train_loss</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val_loss</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TrainerMetrics.to_dict">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainerMetrics.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the metrics to a dictionary format.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: A dictionary representation of the training metrics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;train_losses&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_losses</span><span class="p">,</span>
+            <span class="s1">&#39;val_losses&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_losses</span><span class="p">,</span>
+            <span class="s1">&#39;train_times&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_times</span><span class="p">,</span>
+            <span class="s1">&#39;learning_rates&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">learning_rates</span><span class="p">,</span>
+            <span class="s1">&#39;epochs&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="TrainerMetrics.from_dict">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.TrainerMetrics.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s1">&#39;TrainerMetrics&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a TrainerMetrics object from a dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (dict): A dictionary containing the training metrics.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainerMetrics: An instance of TrainerMetrics populated with the provided data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">train_losses</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;train_losses&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">val_losses</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;val_losses&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">train_times</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;train_times&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">learning_rates</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;learning_rates&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;epochs&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="n">metrics</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DummyOptimizer">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.DummyOptimizer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyOptimizer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy optimizer for evaluation mode&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}]</span>
+
+<div class="viewcode-block" id="DummyOptimizer.step">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.DummyOptimizer.step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="DummyOptimizer.zero_grad">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.DummyOptimizer.zero_grad">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zero_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_to_none</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DummyScheduler">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.DummyScheduler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DummyScheduler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dummy scheduler for evaluation mode&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DummyScheduler.step">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.DummyScheduler.step">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Trainer">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Trainer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lightweight trainer for transformer models with callback support.</span>
+
+<span class="sd">    This trainer class provides a flexible infrastructure for training transformer models</span>
+<span class="sd">    with support for various features like callbacks, checkpointing, and different model types.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        device (str): Device to run training on (&#39;cuda&#39; or &#39;cpu&#39;)</span>
+<span class="sd">        model (torch.nn.Module): The transformer model to train</span>
+<span class="sd">        optimizer (torch.optim.Optimizer): Optimizer for model training</span>
+<span class="sd">        scheduler (torch.optim.lr_scheduler._LRScheduler): Learning rate scheduler</span>
+<span class="sd">        loss_fn (Callable): Loss function for training</span>
+<span class="sd">        train_dataloader (DataLoader): DataLoader for training data</span>
+<span class="sd">        val_dataloader (DataLoader): DataLoader for validation data</span>
+<span class="sd">        fast_dev_run (bool): If True, runs only one batch for training and validation</span>
+<span class="sd">        model_type (Literal[&#39;encoder-decoder&#39;, &#39;encoder-only&#39;, &#39;decoder-only&#39;]):</span>
+<span class="sd">        Type of transformer model</span>
+
+<span class="sd">        grad_accumulation_steps (int): Number of steps to accumulate gradients</span>
+<span class="sd">        metrics (TrainerMetrics): Object to track training metrics</span>
+<span class="sd">        current_epoch (int): Current training epoch</span>
+<span class="sd">        train_state (TrainState): Object tracking training state</span>
+<span class="sd">        console (Console): Rich console for pretty printing</span>
+<span class="sd">        callbacks (list[Callback]): List of callbacks for training</span>
+<span class="sd">        stop_training (bool): Flag to stop training</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; model = TransformerModel()</span>
+<span class="sd">        &gt;&gt;&gt; optimizer = torch.optim.Adam(</span>
+<span class="sd">        ...     model.parameters()</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; scheduler = torch.optim.lr_scheduler.StepLR(</span>
+<span class="sd">        ...     optimizer,</span>
+<span class="sd">        ...     step_size=1,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; loss_fn = torch.nn.CrossEntropyLoss()</span>
+<span class="sd">        &gt;&gt;&gt; trainer = Trainer(</span>
+<span class="sd">        ...     model=model,</span>
+<span class="sd">        ...     optimizer=optimizer,</span>
+<span class="sd">        ...     scheduler=scheduler,</span>
+<span class="sd">        ...     loss_fn=loss_fn,</span>
+<span class="sd">        ...     train_dataloader=train_loader,</span>
+<span class="sd">        ...     val_dataloader=val_loader,</span>
+<span class="sd">        ...     callbacks=[</span>
+<span class="sd">        ...         CheckpointCallback()</span>
+<span class="sd">        ...     ],</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; metrics = (</span>
+<span class="sd">        ...     trainer.fit(</span>
+<span class="sd">        ...         epochs=10</span>
+<span class="sd">        ...     )</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">,</span>
+        <span class="n">scheduler</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">_LRScheduler</span><span class="p">,</span>
+        <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">train_dataloader</span><span class="p">:</span> <span class="n">DataLoader</span><span class="p">,</span>
+        <span class="n">val_dataloader</span><span class="p">:</span> <span class="n">DataLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">grad_accumulation_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">fast_dev_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">scheduler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_dataloader</span> <span class="o">=</span> <span class="n">train_dataloader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataloader</span> <span class="o">=</span> <span class="n">val_dataloader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fast_dev_run</span> <span class="o">=</span> <span class="n">fast_dev_run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;encoder-decoder&#39;</span><span class="p">,</span> <span class="s1">&#39;encoder-only&#39;</span><span class="p">,</span> <span class="s1">&#39;decoder-only&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_type</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grad_accumulation_steps</span> <span class="o">=</span> <span class="n">grad_accumulation_steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">TrainerMetrics</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span> <span class="o">=</span> <span class="n">TrainState</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span> <span class="o">=</span> <span class="n">callbacks</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_training</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="Trainer.fit">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainerMetrics</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Train the model for the specified number of epochs.</span>
+<span class="sd">        This method handles the complete training loop including validation if a validation</span>
+<span class="sd">        dataloader is provided. It manages callbacks, metrics tracking, and supports</span>
+<span class="sd">        early stopping.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            epochs (int): Number of training epochs to run.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainerMetrics: Object containing training metrics including train/val losses,</span>
+<span class="sd">                learning rates, and epoch times.</span>
+<span class="sd">        Notes:</span>
+<span class="sd">            - If `fast_dev_run` is `True`, only one batch will be used for training and validation</span>
+<span class="sd">            - Training can be stopped early by setting stop_training to True via callbacks</span>
+<span class="sd">            - Progress is logged to console using rich formatting</span>
+<span class="sd">            - Callbacks are executed at the start of training, end of each epoch,and end of training</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+            <span class="n">Panel</span><span class="p">(</span><span class="s1">&#39;🚀 Training Starting...&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;[bold blue]Status[/]&#39;</span><span class="p">,</span> <span class="n">border_style</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+            <span class="n">callback</span><span class="o">.</span><span class="n">on_train_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_dev_run</span><span class="p">:</span>
+            <span class="n">epochs</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+            <span class="n">epoch_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span>
+
+            <span class="c1"># Training</span>
+            <span class="n">max_train</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_dev_run</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">train_loss</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span> <span class="o">=</span> <span class="n">run_epoch</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">train_dataloader</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">,</span>
+                <span class="n">accum_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grad_accumulation_steps</span><span class="p">,</span>
+                <span class="n">train_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                <span class="n">max_batches</span><span class="o">=</span><span class="n">max_train</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Validation</span>
+            <span class="n">val_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dataloader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">max_val</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_dev_run</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+                <span class="n">val_loss</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">run_epoch</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">,</span>
+                    <span class="n">DummyOptimizer</span><span class="p">(),</span>
+                    <span class="n">DummyScheduler</span><span class="p">(),</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;eval&#39;</span><span class="p">,</span>
+                    <span class="n">train_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="p">,</span>
+                    <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                    <span class="n">max_batches</span><span class="o">=</span><span class="n">max_val</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">epoch_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">epoch_start</span>
+            <span class="n">current_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;lr&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">train_loss</span><span class="p">,</span> <span class="n">val_loss</span><span class="p">,</span> <span class="n">epoch_time</span><span class="p">,</span> <span class="n">current_lr</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fast_dev_run</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+                    <span class="n">callback</span><span class="o">.</span><span class="n">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_epoch_summary</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">,</span> <span class="n">val_loss</span><span class="p">,</span> <span class="n">epoch_time</span><span class="p">,</span> <span class="n">current_lr</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_training</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+            <span class="n">callback</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+            <span class="n">Panel</span><span class="p">(</span><span class="s1">&#39;✨ Training Complete!&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;[bold blue]Status[/]&#39;</span><span class="p">,</span> <span class="n">border_style</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_clean_metrics</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Trainer.save_checkpoint">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer.save_checkpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the current training state to a checkpoint file.</span>
+
+<span class="sd">        The checkpoint contains:</span>
+<span class="sd">            - Current epoch number</span>
+<span class="sd">            - Model state dictionary</span>
+<span class="sd">            - Optimizer state dictionary</span>
+<span class="sd">            - Learning rate scheduler state dictionary (if exists)</span>
+<span class="sd">            - Training metrics</span>
+<span class="sd">            - Model type</span>
+<span class="sd">            - Training state including:</span>
+<span class="sd">                - Current step</span>
+<span class="sd">                - Accumulation step</span>
+<span class="sd">                - Number of processed samples</span>
+<span class="sd">                - Number of processed tokens</span>
+<span class="sd">                - Last completed epoch</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (Path): Path where to save the checkpoint file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; trainer.save_checkpoint(</span>
+<span class="sd">            ...     Path(</span>
+<span class="sd">            ...         &#39;checkpoints/model.pt&#39;</span>
+<span class="sd">            ...     )</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">,</span>
+            <span class="s1">&#39;model_state_dict&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span>
+            <span class="s1">&#39;optimizer_state_dict&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span>
+            <span class="s1">&#39;scheduler_state_dict&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;metrics&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s1">&#39;model_type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">,</span>
+            <span class="s1">&#39;train_state&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;step&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
+                <span class="s1">&#39;accum_step&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">accum_step</span><span class="p">,</span>
+                <span class="s1">&#39;samples&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span>
+                <span class="s1">&#39;tokens&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">tokens</span><span class="p">,</span>
+                <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Last completed epoch</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[bold blue]Checkpoint saved to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Trainer.load_checkpoint">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer.load_checkpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">load_optimizer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load training state from checkpoint.</span>
+<span class="sd">        This method restores model state, optimizer state, scheduler state, metrics, and training</span>
+<span class="sd">        state from a saved checkpoint file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (Union[Path, str]): Path to the checkpoint file.</span>
+<span class="sd">            load_optimizer (bool, optional): Whether to load optimizer state. Defaults to True.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: If checkpoint file does not exist at specified path.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The checkpoint file is expected to contain some or all of the following:</span>
+<span class="sd">            - model_state_dict: State of the model</span>
+<span class="sd">            - optimizer_state_dict: State of the optimizer (if load_optimizer=True)</span>
+<span class="sd">            - scheduler_state_dict: State of the learning rate scheduler</span>
+<span class="sd">            - metrics: Training metrics history</span>
+<span class="sd">            - train_state: Training state including steps and counters</span>
+<span class="sd">            - epoch: Last completed epoch number</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[bold red]Checkpoint </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1"> not found[/]&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Checkpoint not found at </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[bold green]Loading checkpoint from </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Load model state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;model_state_dict&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Load optimizer state</span>
+        <span class="k">if</span> <span class="n">load_optimizer</span> <span class="ow">and</span> <span class="s1">&#39;optimizer_state_dict&#39;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;optimizer_state_dict&#39;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+                        <span class="n">state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Load scheduler state</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span>
+            <span class="ow">and</span> <span class="s1">&#39;scheduler_state_dict&#39;</span> <span class="ow">in</span> <span class="n">checkpoint</span>
+            <span class="ow">and</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;scheduler_state_dict&#39;</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;scheduler_state_dict&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Load metrics and sync epoch counter</span>
+        <span class="k">if</span> <span class="s1">&#39;metrics&#39;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="n">TrainerMetrics</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;metrics&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span><span class="p">:</span>
+                <span class="n">last_metric_epoch</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">,</span>  <span class="c1"># Preserve any previous adjustment</span>
+                    <span class="n">last_metric_epoch</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Start after last recorded epoch</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Load training state</span>
+        <span class="k">if</span> <span class="s1">&#39;train_state&#39;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="p">:</span>
+            <span class="n">train_state_data</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;train_state&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">step</span> <span class="o">=</span> <span class="n">train_state_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;step&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">accum_step</span> <span class="o">=</span> <span class="n">train_state_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;accum_step&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">samples</span> <span class="o">=</span> <span class="n">train_state_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;samples&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="o">.</span><span class="n">tokens</span> <span class="o">=</span> <span class="n">train_state_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tokens&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Final epoch sync from checkpoint</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;epoch&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">)</span>
+
+        <span class="c1"># Ensure we don&#39;t repeat epochs from metrics</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span><span class="p">:</span>
+            <span class="n">last_metric_epoch</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">&lt;=</span> <span class="n">last_metric_epoch</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="n">last_metric_epoch</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s1">&#39;[bold green]Successfully loaded checkpoint.[/]&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Trainer.evaluate">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer.evaluate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate the model on the validation set.</span>
+
+<span class="sd">        Runs the model in evaluation mode on the validation dataset and computes the validation loss</span>
+<span class="sd">        No gradients are computed during evaluation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The validation loss value computed over the entire validation set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">val_loss</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">run_epoch</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_dataloader</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span><span class="p">,</span>
+            <span class="n">DummyOptimizer</span><span class="p">(),</span>
+            <span class="n">DummyScheduler</span><span class="p">(),</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;eval&#39;</span><span class="p">,</span>
+            <span class="n">train_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_state</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">val_loss</span></div>
+
+
+<div class="viewcode-block" id="Trainer.predict">
+<a class="viewcode-back" href="../../flexit.html#flexit.train.Trainer.predict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">src_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_len</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">start_symbol</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate predictions using model&#39;s decoding strategy.</span>
+<span class="sd">        This method generates predictions based on the model type. For encoder-only models,</span>
+<span class="sd">        it performs direct classification. For encoder-decoder models, it uses greedy decoding</span>
+<span class="sd">        to generate sequences.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src (torch.Tensor, optional): Input tensor for prediction. Required for</span>
+<span class="sd">                encoder-only models.</span>
+<span class="sd">            src_mask (torch.Tensor, optional): Mask for source sequence. Required for</span>
+<span class="sd">                encoder-decoder models.</span>
+<span class="sd">            max_len (int): Maximum length for sequence generation. Defaults to 50.</span>
+<span class="sd">            start_symbol (int): Starting token for sequence generation. Defaults to 0.</span>
+<span class="sd">            torch.Tensor: Predictions from the model. For encoder-only models, returns class</span>
+<span class="sd">                indices. For encoder-decoder models, returns generated sequences.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If src is not provided for encoder-only models, or if either src or</span>
+<span class="sd">                src_mask is not provided for encoder-decoder models.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="k">match</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">:</span>
+                <span class="k">case</span> <span class="s1">&#39;encoder-only&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;src must be provided for encoder-only models&#39;</span><span class="p">)</span>
+                    <span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">src_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">src_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">src</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;pad_token_id&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span>
+                            <span class="o">-</span><span class="mi">2</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">src_mask</span> <span class="o">=</span> <span class="n">src_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="p">)</span>
+                    <span class="n">predictions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">predictions</span>
+
+                <span class="k">case</span> <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">src_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s1">&#39;Both src and src_mask must be provided for encoder-decoder models&#39;</span>
+                        <span class="p">)</span>
+                    <span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                    <span class="n">src_mask</span> <span class="o">=</span> <span class="n">src_mask</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">greedy_decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="p">,</span> <span class="n">max_len</span><span class="p">,</span> <span class="n">start_symbol</span><span class="p">)</span>
+
+                <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">greedy_decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="p">,</span> <span class="n">max_len</span><span class="p">,</span> <span class="n">start_symbol</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_clean_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainerMetrics</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts and returns clean metrics from trainer metrics.</span>
+<span class="sd">        This method processes the metrics stored in the trainer by converting PyTorch tensor</span>
+<span class="sd">        losses to float values while preserving non-tensor losses. The cleaned metrics are</span>
+<span class="sd">        returned in a new TrainerMetrics object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrainerMetrics: A new metrics object containing cleaned values with:</span>
+<span class="sd">                - train_losses: List of float losses from training</span>
+<span class="sd">                - val_losses: List of float losses from validation</span>
+<span class="sd">                - train_times: List of training times per epoch</span>
+<span class="sd">                - learning_rates: List of learning rates used</span>
+<span class="sd">                - epochs: List of epoch numbers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">clean_metrics</span> <span class="o">=</span> <span class="n">TrainerMetrics</span><span class="p">()</span>
+        <span class="n">clean_metrics</span><span class="o">.</span><span class="n">train_losses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="s1">&#39;item&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">loss</span> <span class="k">for</span> <span class="n">loss</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">train_losses</span>
+        <span class="p">]</span>
+        <span class="n">clean_metrics</span><span class="o">.</span><span class="n">val_losses</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="s1">&#39;item&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">loss</span> <span class="k">for</span> <span class="n">loss</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">val_losses</span>
+        <span class="p">]</span>
+        <span class="n">clean_metrics</span><span class="o">.</span><span class="n">train_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">train_times</span>
+        <span class="n">clean_metrics</span><span class="o">.</span><span class="n">learning_rates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">learning_rates</span>
+        <span class="n">clean_metrics</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">epochs</span>
+        <span class="k">return</span> <span class="n">clean_metrics</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log_epoch_summary</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">val_loss</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">epoch_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log epoch summary information.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            epoch (int): Current epoch number (0-based indexing).</span>
+<span class="sd">            train_loss (float): Training loss value for the current epoch.</span>
+<span class="sd">            val_loss (float): Validation loss value for the current epoch.</span>
+<span class="sd">            epoch_time (float): Time taken to complete the epoch in seconds.</span>
+<span class="sd">            lr (float): Current learning rate.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This method logs the epoch summary without tracking the best model.</span>
+<span class="sd">            If validation dataloader is not provided, validation loss will be shown as N/A.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s1">&#39;Epoch: </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;Train Loss: </span><span class="si">{</span><span class="n">train_loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;Val Loss: </span><span class="si">{</span><span class="n">val_loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dataloader</span> <span class="k">else</span> <span class="s1">&#39;Val Loss: N/A&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;Time: </span><span class="si">{</span><span class="n">epoch_time</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s1">&#39;LR: </span><span class="si">{</span><span class="n">lr</span><span class="si">:</span><span class="s1">.2e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">panel</span> <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">summary</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Epoch Summary&#39;</span><span class="p">,</span> <span class="n">border_style</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">panel</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Ahmed Elshahawy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

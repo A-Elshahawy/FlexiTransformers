@@ -8,8 +8,9 @@ repos:
         types: [python]
       - id: check-yaml
       - id: check-added-large-files
-  
-  
+        args: ["--maxkb", "1024"]
+
+
   - repo: https://github.com/PyCQA/isort
     rev: 6.0.1
     hooks:
@@ -19,7 +20,7 @@ repos:
 
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+    rev: v0.11.2
     hooks:
       - id: ruff
         types: [python]
@@ -31,7 +32,7 @@ repos:
 
   
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0  # Use the latest stable version
+    rev: v1.15.0  
     hooks:
       - id: mypy
         args: ["--ignore-missing-imports", "--explicit-package-bases"]
