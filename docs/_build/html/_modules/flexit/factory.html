@@ -1,0 +1,536 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flexit.factory &mdash; FlexiTransformers 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlexiTransformers
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Package Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">flexit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlexiTransformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flexit.factory</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flexit.factory</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Transformer Factory</span>
+
+<span class="sd">This module implements a factory class for creating different types of transformer models</span>
+<span class="sd">based on configuration parameters.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attention</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AbsoluteMultiHeadedAttention</span><span class="p">,</span>
+    <span class="n">ALiBiMultiHeadAttention</span><span class="p">,</span>
+    <span class="n">RelativeGlobalAttention</span><span class="p">,</span>
+    <span class="n">RotaryMultiHeadAttention</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decoder</span><span class="p">,</span> <span class="n">Encoder</span><span class="p">,</span> <span class="n">EncoderDecoder</span><span class="p">,</span> <span class="n">Generator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.layers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecoderLayer</span><span class="p">,</span> <span class="n">Embeddings</span><span class="p">,</span> <span class="n">EncoderLayer</span><span class="p">,</span> <span class="n">PositionwiseFeedForward</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models_heads</span><span class="w"> </span><span class="kn">import</span> <span class="n">BertHead</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.pos_embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbsolutePositionalEncoding</span>
+
+
+<div class="viewcode-block" id="TransformerFactory">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.TransformerFactory">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransformerFactory</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Factory class for creating transformer models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config (ModelConfig): Model configuration.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        create_model: Create transformer model based on configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize transformer factory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config (ModelConfig): Model configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_config</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validates the model configuration.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If configuration is invalid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="c1"># Basic validations</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span> <span class="o">%</span> <span class="n">c</span><span class="o">.</span><span class="n">n_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Invalid d_model (</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="si">}</span><span class="s1">): must be positive </span><span class="se">\</span>
+<span class="s1">                    and a multiple of n_heads (</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">n_heads</span><span class="si">}</span><span class="s1">).&#39;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">d_ff</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid d_ff: </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">d_ff</span><span class="si">}</span><span class="s1"> (must be positive).&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Invalid dropout: </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="si">}</span><span class="s1"> (must be between 0 and 1).&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Model type validations</span>
+        <span class="n">model_validations</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;conditions&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;src_vocab and tgt_vocab are required for encoder-decoder&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;encoder-only&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;conditions&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;src_vocab is required for encoder-only&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;decoder-only&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;conditions&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;tgt_vocab is required for decoder-only&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">model_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_validations</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsupported model_type: </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">model_type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">validation</span> <span class="o">=</span> <span class="n">model_validations</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">model_type</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;conditions&#39;</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">validation</span><span class="p">[</span><span class="s1">&#39;message&#39;</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize model weights.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (nn.Module): Model to initialize.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">init_fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">init_method</span><span class="si">}</span><span class="s1">_&#39;</span><span class="p">)</span>
+                <span class="n">init_fn</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_attention_mechanism</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get attention mechanism based on configuration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple[nn.Module | None, nn.Module | None]: Attention mechanism and positional encoding.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="n">mechanisms</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;absolute&#39;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">AbsoluteMultiHeadedAttention</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span>
+                <span class="n">AbsolutePositionalEncoding</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;alibi&#39;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">ALiBiMultiHeadAttention</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;relative&#39;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">RelativeGlobalAttention</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;rotary&#39;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">RotaryMultiHeadAttention</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">pe_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mechanisms</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown positional encoding type: </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">pe_type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mechanisms</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">pe_type</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get embedding layer based on vocabulary size.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vocab_size (int | None): Vocabulary size.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            nn.Module: Embedding layer.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If vocabulary size is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get positional encoding if available</span>
+        <span class="k">if</span> <span class="n">vocab_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Vocabulary size cannot be None&#39;</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_attention_mechanism</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">position</span><span class="p">:</span>
+            <span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">Embeddings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">Embeddings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">),</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">embed</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__create_encoder_decoder</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create encoder-decoder model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            nn.Module: Encoder-decoder model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span>
+        <span class="n">attention</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_attention_mechanism</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;src_vocab must be defined for encoder-decoder models.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tgt_vocab must be defined for encoder-decoder models.&#39;</span><span class="p">)</span>
+
+        <span class="n">src_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_embedding</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span><span class="p">)</span>
+        <span class="n">tgt_embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_embedding</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span><span class="p">)</span>
+
+        <span class="n">ff</span> <span class="o">=</span> <span class="n">PositionwiseFeedForward</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_ff</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">ff_activation</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tgt_vocab must be defined for encoder-decoder models.&#39;</span><span class="p">)</span>
+
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">Generator</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span><span class="p">)</span>
+
+        <span class="c1"># Determine layer counts for encoder and decoder.</span>
+        <span class="n">n_enc</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span>
+        <span class="n">n_dec</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span>
+
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">Encoder</span><span class="p">(</span>
+            <span class="n">EncoderLayer</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">copy</span><span class="p">(</span><span class="n">attention</span><span class="p">),</span> <span class="n">copy</span><span class="p">(</span><span class="n">ff</span><span class="p">),</span> <span class="n">c</span><span class="o">.</span><span class="n">pre_norm</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">),</span> <span class="n">n_enc</span>
+        <span class="p">)</span>
+
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span>
+            <span class="n">DecoderLayer</span><span class="p">(</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">attention</span><span class="p">),</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">attention</span><span class="p">),</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">ff</span><span class="p">),</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">pre_norm</span><span class="p">,</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">n_dec</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">EncoderDecoder</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">src_embed</span><span class="p">,</span> <span class="n">tgt_embed</span><span class="p">,</span> <span class="n">generator</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__create_encoder_only</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create encoder-only model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            nn.Module: Encoder-only model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span>
+        <span class="n">attn</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_attention_mechanism</span><span class="p">()</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_embedding</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span><span class="p">)</span>
+
+        <span class="n">n_layers</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">Encoder</span><span class="p">(</span>
+            <span class="n">EncoderLayer</span><span class="p">(</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">attn</span><span class="p">),</span>
+                <span class="n">copy</span><span class="p">(</span>
+                    <span class="n">PositionwiseFeedForward</span><span class="p">(</span>
+                        <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_ff</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">ff_activation</span>
+                    <span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">pre_norm</span><span class="p">,</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">n_layers</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">src_vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;src_vocab must be defined for encoder-only models.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">num_classes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;num_classes must be defined for classification tasks</span>
+<span class="s2">                                    in encoder-only models.&quot;&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">bert_head</span> <span class="o">=</span> <span class="n">BertHead</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">num_classes</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">pre_norm</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">ff_activation</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">EncoderOnly</span><span class="p">(</span><span class="n">embed</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">bert_head</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__create_decoder_only</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create decoder-only model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            nn.Module: Decoder-only model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="n">deepcopy</span>
+        <span class="n">attn</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_attention_mechanism</span><span class="p">()</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_embedding</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span><span class="p">)</span>
+
+        <span class="n">n_layers</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span>
+            <span class="n">DecoderLayer</span><span class="p">(</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">attn</span><span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="n">copy</span><span class="p">(</span>
+                    <span class="n">PositionwiseFeedForward</span><span class="p">(</span>
+                        <span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">d_ff</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">ff_activation</span>
+                    <span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">pre_norm</span><span class="p">,</span>
+                <span class="n">c</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">n_layers</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tgt_vocab must be defined for decoder-only models.&#39;</span><span class="p">)</span>
+
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">Generator</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">d_model</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">tgt_vocab</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">DecoderOnly</span><span class="p">(</span><span class="n">embed</span><span class="p">,</span> <span class="n">decoder</span><span class="p">,</span> <span class="n">generator</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+<div class="viewcode-block" id="TransformerFactory.create_model">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.TransformerFactory.create_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create transformer model based on configuration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            nn.Module: Created transformer model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">creators</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;encoder-decoder&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__create_encoder_decoder</span><span class="p">,</span>
+            <span class="s1">&#39;encoder-only&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__create_encoder_only</span><span class="p">,</span>
+            <span class="s1">&#39;decoder-only&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__create_decoder_only</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">creators</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_type</span><span class="p">]()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="EncoderOnly">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.EncoderOnly">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EncoderOnly</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Encoder-only transformer architecture.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        embed (nn.Module): Embedding layer.</span>
+<span class="sd">        encoder (nn.Module): Encoder module.</span>
+<span class="sd">        head (nn.Module): Classification head.</span>
+<span class="sd">        config (ModelConfig): Model configuration.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        forward: Forward pass through encoder and classification head.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">embed</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">encoder</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">head</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize encoder-only model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            embed (nn.Module): Embedding layer.</span>
+<span class="sd">            encoder (nn.Module): Encoder module.</span>
+<span class="sd">            head (nn.Module): Classification head.</span>
+<span class="sd">            config (ModelConfig): Model configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">embed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">head</span>
+
+<div class="viewcode-block" id="EncoderOnly.forward">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.EncoderOnly.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">src_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass through encoder and classification head.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src (torch.Tensor): Input tensor.</span>
+<span class="sd">            src_mask (torch.Tensor): Mask tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Output tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src_embedded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+        <span class="n">encoder_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">src_embedded</span><span class="p">,</span> <span class="n">src_mask</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="n">encoder_output</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DecoderOnly">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.DecoderOnly">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DecoderOnly</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decoder-only transformer architecture.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        embed (nn.Module): Embedding layer.</span>
+<span class="sd">        decoder (nn.Module): Decoder module.</span>
+<span class="sd">        generator (nn.Module): Generator module.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        forward: Forward pass through decoder.</span>
+
+
+<span class="sd">    The implementation allows for both:</span>
+<span class="sd">    1. A simplified interface (tgt, tgt_mask) for decoder-only use</span>
+<span class="sd">    2. The full interface (src, tgt, src_mask, tgt_mask) for compatibility</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embed</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">decoder</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">generator</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize decoder-only model.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            embed (nn.Module): Embedding layer.</span>
+<span class="sd">            decoder (nn.Module): Decoder module.</span>
+<span class="sd">            generator (nn.Module): Generator module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">embed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">generator</span>
+
+<div class="viewcode-block" id="DecoderOnly.forward">
+<a class="viewcode-back" href="../../flexit.html#flexit.factory.DecoderOnly.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tgt</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">tgt_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">src</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">src_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass for the decoder-only model with flexible parameter handling.</span>
+
+
+<span class="sd">        Args:</span>
+<span class="sd">            tgt (torch.Tensor): Target sequence input</span>
+<span class="sd">            tgt_mask (torch.Tensor | None): Target sequence mask</span>
+<span class="sd">            src (torch.Tensor | None): Source sequence (unused, kept for interface compatibility)</span>
+<span class="sd">            src_mask (torch.Tensor | None): Source mask (unused, kept for interface compatibility)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: Output tensor</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            - The src and src_mask parameters are included for interface compatibility</span>
+<span class="sd">                but are not used in the decoder-only architecture</span>
+<span class="sd">            - This implementation allows for both simplified and full interface usage:</span>
+<span class="sd">                model(tgt, tgt_mask) or model(src, tgt, src_mask, tgt_mask)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">tgt_embedded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">tgt</span><span class="p">)</span>
+        <span class="n">decoder_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">tgt_embedded</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tgt_mask</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">decoder_output</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Ahmed Elshahawy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

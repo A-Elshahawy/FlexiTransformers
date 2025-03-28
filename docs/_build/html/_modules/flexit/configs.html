@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flexit.configs &mdash; FlexiTransformers 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlexiTransformers
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Package Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">flexit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlexiTransformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flexit.configs</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flexit.configs</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">fields</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Self</span><span class="p">,</span> <span class="n">cast</span>
+
+
+<div class="viewcode-block" id="ModelConfig">
+<a class="viewcode-back" href="../../flexit.html#flexit.configs.ModelConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for transformer models.</span>
+
+<span class="sd">    This dataclass holds configuration settings for various types of transformer models,</span>
+<span class="sd">    including encoder-decoder, encoder-only, and decoder-only architectures.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        src_vocab: Source vocabulary size.</span>
+<span class="sd">            Required for encoder-decoder or encoder-only models.</span>
+<span class="sd">        tgt_vocab: Target vocabulary size.</span>
+<span class="sd">            Required for encoder-decoder or decoder-only models.</span>
+<span class="sd">        num_classes: Number of classes for classification tasks (e.g., BERT-like).</span>
+<span class="sd">        d_model: Model dimension. Default is 512.</span>
+<span class="sd">        d_ff: Feed-forward dimension. Default is 2048.</span>
+<span class="sd">        n_heads: Number of attention heads. Default is 8.</span>
+<span class="sd">        dropout: Dropout probability. Default is 0.1.</span>
+<span class="sd">        n_layers: Number of layers. Default is 6.</span>
+<span class="sd">        model_type: Model type. Options are:</span>
+<span class="sd">            - &#39;encoder-decoder&#39;</span>
+<span class="sd">            - &#39;encoder-only&#39;</span>
+<span class="sd">            - &#39;decoder-only&#39;</span>
+<span class="sd">        pe_type: Positional encoding type. Options are:</span>
+<span class="sd">            - &#39;absolute&#39;</span>
+<span class="sd">            - &#39;alibi&#39;</span>
+<span class="sd">            - &#39;relative&#39;</span>
+<span class="sd">            - &#39;rotary&#39;</span>
+<span class="sd">        pre_norm: Use pre-normalization. Default is True.</span>
+<span class="sd">        device: Device for computation (&#39;cpu&#39; or &#39;gpu&#39;). Default is &#39;cpu&#39;.</span>
+<span class="sd">        init_method: Weight initialization method. Options are:</span>
+<span class="sd">            - &#39;xavier_uniform&#39;</span>
+<span class="sd">            - &#39;xavier_normal&#39;</span>
+<span class="sd">            - &#39;kaiming_uniform&#39;</span>
+<span class="sd">            - &#39;kaiming_normal&#39;</span>
+<span class="sd">            - &#39;orthogonal&#39;</span>
+<span class="sd">            - &#39;zero&#39;</span>
+<span class="sd">            - &#39;one&#39;</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Create a ModelConfig for an encoder-decoder model:</span>
+
+<span class="sd">        &gt;&gt;&gt; config = ModelConfig(</span>
+<span class="sd">        ...     src_vocab=32000,</span>
+<span class="sd">        ...     tgt_vocab=32000,</span>
+<span class="sd">        ...     d_model=512,</span>
+<span class="sd">        ...     n_heads=8,</span>
+<span class="sd">        ...     model_type=&#39;encoder-decoder&#39;,</span>
+<span class="sd">        ...     pe_type=&#39;absolute&#39;,</span>
+<span class="sd">        ... )</span>
+
+<span class="sd">        Create a ModelConfig from a dictionary:</span>
+
+<span class="sd">        &gt;&gt;&gt; config_dict = {</span>
+<span class="sd">        ...     &#39;src_vocab&#39;: 32000,</span>
+<span class="sd">        ...     &#39;tgt_vocab&#39;: 32000,</span>
+<span class="sd">        ...     &#39;d_model&#39;: 512,</span>
+<span class="sd">        ...     &#39;n_heads&#39;: 8,</span>
+<span class="sd">        ...     &#39;model_type&#39;: &#39;encoder-decoder&#39;,</span>
+<span class="sd">        ...     &#39;pe_type&#39;: &#39;absolute&#39;,</span>
+<span class="sd">        ... }</span>
+<span class="sd">        &gt;&gt;&gt; config = ModelConfig.from_dict(</span>
+<span class="sd">        ...     config_dict</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">src_vocab</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">tgt_vocab</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">num_classes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">cls_token_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">d_model</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span>
+    <span class="n">d_ff</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span>
+    <span class="n">n_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">n_layers</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">model_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;encoder-decoder&#39;</span><span class="p">,</span> <span class="s1">&#39;encoder-only&#39;</span><span class="p">,</span> <span class="s1">&#39;decoder-only&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;encoder-decoder&#39;</span>
+    <span class="n">pe_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="s1">&#39;alibi&#39;</span><span class="p">,</span> <span class="s1">&#39;relative&#39;</span><span class="p">,</span> <span class="s1">&#39;rotary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;absolute&#39;</span>
+    <span class="n">pre_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">ff_activation</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span>
+        <span class="s1">&#39;relu&#39;</span><span class="p">,</span> <span class="s1">&#39;gelu&#39;</span><span class="p">,</span> <span class="s1">&#39;tanh&#39;</span><span class="p">,</span> <span class="s1">&#39;sigmoid&#39;</span><span class="p">,</span> <span class="s1">&#39;leaky_relu&#39;</span><span class="p">,</span> <span class="s1">&#39;silu&#39;</span><span class="p">,</span> <span class="s1">&#39;elu&#39;</span><span class="p">,</span> <span class="s1">&#39;selu&#39;</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;relu&#39;</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;cpu&#39;</span>
+    <span class="n">init_method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span>
+        <span class="s1">&#39;xavier_uniform&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;xavier_normal&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;kaiming_uniform&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;kaiming_normal&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;orthogonal&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;zero&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;one&#39;</span><span class="p">,</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;xavier_uniform&#39;</span>
+
+<div class="viewcode-block" id="ModelConfig.from_dict">
+<a class="viewcode-back" href="../../flexit.html#flexit.configs.ModelConfig.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s1">&#39;ModelConfig&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a ModelConfig instance from a dictionary.</span>
+
+<span class="sd">        This method filters the input dictionary to include only valid configuration</span>
+<span class="sd">        parameters and creates a new ModelConfig instance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config_dict: Dictionary containing configuration parameters.</span>
+<span class="sd">                Must contain valid ModelConfig field names.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ModelConfig: A new instance initialized with the dictionary values.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            Creating a config from a dictionary:</span>
+
+<span class="sd">            &gt;&gt;&gt; config_dict = {</span>
+<span class="sd">            ...     &#39;src_vocab&#39;: 32000,</span>
+<span class="sd">            ...     &#39;d_model&#39;: 512,</span>
+<span class="sd">            ...     &#39;model_type&#39;: &#39;encoder-decoder&#39;,</span>
+<span class="sd">            ... }</span>
+<span class="sd">            &gt;&gt;&gt; config = ModelConfig.from_dict(</span>
+<span class="sd">            ...     config_dict</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">field_names</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">cls</span><span class="p">)}</span>
+        <span class="n">filtered_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">config_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">field_names</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">filtered_dict</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConfigDescriptor">
+<a class="viewcode-back" href="../../flexit.html#flexit.configs.ConfigDescriptor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConfigDescriptor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Descriptor managing model configurations.</span>
+
+<span class="sd">    This descriptor is used to manage model configurations in the `FlexiTransformer` class.</span>
+<span class="sd">    It allows for easy configuration of the model using keyword arguments.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    value : dict or ModelConfig</span>
+<span class="sd">        The configuration dictionary or ModelConfig instance.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ModelConfig</span>
+<span class="sd">        The validated ModelConfig instance.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AttributeError</span>
+<span class="sd">        If the configuration is not initialized.</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If the configuration is not a dictionary or ModelConfig instance.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt;&gt; model = FlexiTransformer(</span>
+<span class="sd">    ...     src_vocab=32000,</span>
+<span class="sd">    ...     d_model=512,</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; model.config</span>
+<span class="sd">    ModelConfig(src_vocab=32000, d_model=512, ...)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__set_name__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelConfig</span> <span class="o">|</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;Descriptor name not set&#39;</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Config not initialized for </span><span class="si">{</span><span class="n">instance</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">ModelConfig</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;Descriptor name not set&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ModelConfig</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Config must be ModelConfig or dict&#39;</span><span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__delete__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Ahmed Elshahawy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
