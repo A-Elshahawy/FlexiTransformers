@@ -1,0 +1,389 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flexit.callbacks &mdash; FlexiTransformers 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlexiTransformers
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Package Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">flexit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlexiTransformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flexit.callbacks</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flexit.callbacks</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Training Callbacks</span>
+
+<span class="sd">This module implements callback classes for training events,</span>
+<span class="sd">including checkpointing and early stopping.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">override</span>  <span class="c1"># noqa: UP035</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
+
+
+<div class="viewcode-block" id="Callback">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.Callback">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Callback</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for training callbacks.</span>
+
+<span class="sd">    Defines hooks for training events that can be overridden by subclasses.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        on_train_begin: Called at the start of training.</span>
+<span class="sd">        on_train_end: Called at the end of training.</span>
+<span class="sd">        on_epoch_begin: Called at the start of each epoch.</span>
+<span class="sd">        on_epoch_end: Called at the end of each epoch.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Callback.on_train_begin">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.Callback.on_train_begin">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called at the start of training.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            trainer: Trainer instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Callback.on_train_end">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.Callback.on_train_end">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called at the end of training.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            trainer: Trainer instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Callback.on_epoch_begin">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.Callback.on_epoch_begin">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_epoch_begin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called at the start of each epoch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            epoch (int): Current epoch number.</span>
+<span class="sd">            trainer: Trainer instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Callback.on_epoch_end">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.Callback.on_epoch_end">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called at the end of each epoch.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            epoch (int): Current epoch number.</span>
+<span class="sd">            trainer: Trainer instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CheckpointCallback">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.CheckpointCallback">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CheckpointCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Callback to handle checkpointing with options to save</span>
+<span class="sd">    only the best model and the last N checkpoints.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        save_best (bool): Save best model based on validation loss.</span>
+<span class="sd">        keep_last (int): Keep last N checkpoints.</span>
+<span class="sd">        checkpoint_dir (Path): Directory to save checkpoints.</span>
+<span class="sd">        filename_format (str): Format string for checkpoint names.</span>
+<span class="sd">        best_filename (str): Filename for best model checkpoint.</span>
+<span class="sd">        best_loss (float): Best validation loss seen so far.</span>
+<span class="sd">        saved_checkpoints (list[Path]): List of saved checkpoint paths.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        on_epoch_end: Save checkpoint if conditions are met and clean up old checkpoints.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">save_best</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">keep_last</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">checkpoint_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">=</span> <span class="s1">&#39;checkpoints&#39;</span><span class="p">,</span>
+        <span class="n">filename_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;checkpoint_epoch_</span><span class="si">{epoch:03d}</span><span class="s1">.pt&#39;</span><span class="p">,</span>
+        <span class="n">best_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;best_model.pt&#39;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize checkpoint callback.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            save_best (bool): Save best model based on validation loss.</span>
+<span class="sd">            keep_last (int): Keep last N checkpoints.</span>
+<span class="sd">            checkpoint_dir (str | Path): Directory to save checkpoints.</span>
+<span class="sd">            filename_format (str): Format string for checkpoint names.</span>
+<span class="sd">            best_filename (str): Filename for best model checkpoint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_best</span> <span class="o">=</span> <span class="n">save_best</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span> <span class="o">=</span> <span class="n">keep_last</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename_format</span> <span class="o">=</span> <span class="n">filename_format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_filename</span> <span class="o">=</span> <span class="n">best_filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saved_checkpoints</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CheckpointCallback.on_epoch_end">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.CheckpointCallback.on_epoch_end">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save checkpoint if conditions are met and clean up old checkpoints.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            epoch (int): Current epoch number.</span>
+<span class="sd">            trainer: Trainer instance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">val_losses</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">current_loss</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">val_losses</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">epoch_num</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">current_epoch</span>  <span class="c1"># Use the trainer&#39;s current epoch counter</span>
+
+        <span class="c1"># Save best model</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_best</span> <span class="ow">and</span> <span class="n">current_loss</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span> <span class="o">=</span> <span class="n">current_loss</span>
+            <span class="n">best_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint_dir</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_filename</span>
+            <span class="n">trainer</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">best_path</span><span class="p">)</span>
+            <span class="n">trainer</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[green]Saved best model (</span><span class="si">{</span><span class="n">current_loss</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">) to </span><span class="si">{</span><span class="n">best_path</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Save regular checkpoint</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">epoch_num</span><span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint_dir</span> <span class="o">/</span> <span class="n">filename</span>
+            <span class="n">trainer</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">saved_checkpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_old_checkpoints</span><span class="p">(</span><span class="n">epoch_num</span><span class="p">,</span> <span class="n">trainer</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_old_checkpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove excess checkpoints based on keep_last policy.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            current_epoch (int): Current epoch number.</span>
+<span class="sd">            trainer: Trainer instance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">saved_checkpoints</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Sort checkpoints by epoch number</span>
+        <span class="n">sorted_checkpoints</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">saved_checkpoints</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_epoch</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Keep only N most recent checkpoints</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">sorted_checkpoints</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span> <span class="p">:]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">saved_checkpoints</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">trainer</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[dim]Removed old checkpoint: </span><span class="si">{</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">trainer</span><span class="o">.</span><span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;[yellow]Error removing </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">[/]&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_epoch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract epoch number from filename.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (Path): Path to checkpoint file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Extracted epoch number.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If epoch number cannot be extracted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># Handle best model filename</span></div>
+
+
+
+<div class="viewcode-block" id="EarlyStoppingCallback">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.EarlyStoppingCallback">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EarlyStoppingCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Callback to stop training early if validation loss doesn&#39;t improve.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        patience (int): Number of epochs to wait for improvement.</span>
+<span class="sd">        min_delta (float): Minimum change in loss to qualify as improvement.</span>
+<span class="sd">        best_loss (float): Best validation loss seen so far.</span>
+<span class="sd">        counter (int): Number of epochs since last improvement.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        on_epoch_end: Check if training should stop based on validation loss.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patience</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">min_delta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize early stopping callback.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            patience (int): Number of epochs to wait for improvement.</span>
+<span class="sd">            min_delta (float): Minimum change in loss to qualify as improvement.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">patience</span> <span class="o">=</span> <span class="n">patience</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_delta</span> <span class="o">=</span> <span class="n">min_delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="EarlyStoppingCallback.on_epoch_end">
+<a class="viewcode-back" href="../../flexit.html#flexit.callbacks.EarlyStoppingCallback.on_epoch_end">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s1">&#39;Trainer&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if training should stop based on validation loss.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            epoch (int): Current epoch number.</span>
+<span class="sd">            trainer: Trainer instance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_loss</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">val_losses</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">current_loss</span> <span class="o">&lt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_delta</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_loss</span> <span class="o">=</span> <span class="n">current_loss</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counter</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patience</span><span class="p">:</span>
+                <span class="n">trainer</span><span class="o">.</span><span class="n">stop_training</span> <span class="o">=</span> <span class="kc">True</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Ahmed Elshahawy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
