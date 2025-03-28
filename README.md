@@ -34,7 +34,7 @@ pip install flexitransformers
 ### 1. Building a Transformer Model (Encoder-Decoder)
 
 ```python
-from flexitransformers.models import FlexiTransformer
+from flexit.models import FlexiTransformer
 
 # Define model configuration
 config = {
@@ -56,7 +56,7 @@ print(model) # Print model configuration
 ### 2. Building a BERT-style Model (Encoder-only)
 
 ```python
-from flexitransformers.models import FlexiBERT
+from flexit.models import FlexiBERT
 
 # Define BERT-style model configuration
 config_bert = {
@@ -78,7 +78,7 @@ print(bert_model)
 ### 3. Building a GPT-style Model (Decoder-only)
 
 ```python
-from flexitransformers.models import FlexiGPT
+from flexit.models import FlexiGPT
 
 # Define GPT-style model configuration
 config_gpt = {
@@ -102,9 +102,9 @@ print(gpt_model)
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from flexitransformers.models import FlexiTransformer
-from flexitransformers.train import Trainer, Batch, LossCompute, LabelSmoothing, lr_step
-from flexitransformers.callbacks import CheckpointCallback, EarlyStoppingCallback
+from flexit.models import FlexiTransformer
+from flexit.train import Trainer, Batch, LossCompute, LabelSmoothing, lr_step
+from flexit.callbacks import CheckpointCallback, EarlyStoppingCallback
 
 # 1. Define Model and Config (as in example 1)
 config = {
