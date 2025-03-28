@@ -3,10 +3,9 @@ name: Docs Release
 on:
   push:
     branches: 
-      - main
+      - master
     paths:
       - 'docs/**'
-      - 'README.md'
   release:
     types: [published]
 
