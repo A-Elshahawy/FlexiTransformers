@@ -93,6 +93,7 @@ BERT-Style Model
        src_vocab=32000,
        num_classes=2,
        d_model=768,
+       ff_activation='gelu',
        pe_type='alibi'
    )
 
@@ -105,7 +106,8 @@ GPT-Style Model
    gpt_model = FlexiGPT(
        tgt_vocab=50000,
        d_model=1024,
-       pe_type='rotary'
+       pe_type='rotary',
+       pre-norm= True
    )
 
 .. mermaid::
