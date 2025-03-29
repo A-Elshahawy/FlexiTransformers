@@ -1,0 +1,755 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flexit.models &mdash; FlexiTransformers 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
+window.addEventListener("load", () => mermaid.run());
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlexiTransformers
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Package Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">flexit</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlexiTransformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flexit.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flexit.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Transformer Models</span>
+
+<span class="sd">This module implements various transformer model variants,</span>
+<span class="sd">including encoder-decoder, encoder-only, and decoder-only architectures.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigDescriptor</span><span class="p">,</span> <span class="n">ModelConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransformerFactory</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">ModelConfig</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseTransformer">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseTransformer</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base transformer that initializes configuration and model building.</span>
+<span class="sd">    This class serves as a base implementation for transformer models, handling configuration</span>
+<span class="sd">    initialization and model construction. It provides a generic interface for encoder-decoder,</span>
+<span class="sd">    encoder-only, and decoder-only transformer architectures.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        config (ModelConfig): Configuration object containing model parameters.</span>
+<span class="sd">        factory (TransformerFactory): Factory class for creating transformer models.</span>
+<span class="sd">        _base_model (nn.Module): The underlying transformer model instance.</span>
+<span class="sd">        generator (nn.Module): Output generator module of the model.</span>
+<span class="sd">        encoder (nn.Module): Encoder module if present in the model.</span>
+<span class="sd">        decoder (nn.Module): Decoder module if present in the model.</span>
+
+<span class="sd">        Example usage:</span>
+<span class="sd">        &gt;&gt;&gt; config = {</span>
+<span class="sd">        ...     &#39;model_type&#39;: &#39;encoder-decoder&#39;,</span>
+<span class="sd">        ...     &#39;src_vocab&#39;: 1000,</span>
+<span class="sd">        ...     &#39;tgt_vocab&#39;: 1000,</span>
+<span class="sd">        ... }</span>
+<span class="sd">        &gt;&gt;&gt; transformer = (</span>
+<span class="sd">        ...     BaseTransformer(</span>
+<span class="sd">        ...         config</span>
+<span class="sd">        ...     )</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; output = (</span>
+<span class="sd">        ...     transformer(</span>
+<span class="sd">        ...         input_ids</span>
+<span class="sd">        ...     )</span>
+<span class="sd">        ... )</span>
+<span class="sd">    Note:</span>
+<span class="sd">        This class uses a ConfigDescriptor for managing model configuration and provides</span>
+<span class="sd">        flexible initialization through either a configuration dictionary/object or</span>
+<span class="sd">        individual parameter settings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">ConfigDescriptor</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize base transformer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Variable arguments.</span>
+<span class="sd">            **kwargs: Keyword arguments for model configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_config</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">factory</span> <span class="o">=</span> <span class="n">TransformerFactory</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span><span class="n">ModelConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">create_model</span><span class="p">()</span>
+
+        <span class="c1"># Transfer model attributes to self</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="s1">&#39;generator&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">generator</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">):</span>
+            <span class="c1"># For decoder-only models</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="s1">&#39;encoder&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">encoder</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="s1">&#39;decoder&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">decoder</span>
+
+        <span class="c1"># Copy all methods and attributes from _base_model that don&#39;t exist in self</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize model configuration from arguments.</span>
+<span class="sd">        This method sets up the model configuration either from a dictionary/ModelConfig object</span>
+<span class="sd">        or from individual parameters. If model_type is not specified, it will be inferred</span>
+<span class="sd">        from the presence of src_vocab and/or tgt_vocab parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            args: Variable length argument list. If single argument is provided,</span>
+<span class="sd">                    it should be either a dictionary or ModelConfig object.</span>
+<span class="sd">            kwargs: Arbitrary keyword arguments. Used to specify model parameters individually.</span>
+<span class="sd">                    Common parameters include:</span>
+<span class="sd">                    - model_type (str): Type of the model (&#39;encoder-decoder&#39;, &#39;encoder-only&#39;,</span>
+<span class="sd">                                        or &#39;decoder-only&#39;)</span>
+<span class="sd">                    - src_vocab (int): Source vocabulary size</span>
+<span class="sd">                    - tgt_vocab (int): Target vocabulary size</span>
+<span class="sd">                    - d_model (int, optional): Model dimension. Defaults to 512</span>
+<span class="sd">                    - d_ff (int, optional): Feed-forward dimension. Defaults to 2048</span>
+<span class="sd">                    - n_heads (int, optional): Number of attention heads. Defaults to 8</span>
+<span class="sd">                    - dropout (float, optional): Dropout rate. Defaults to 0.1</span>
+<span class="sd">                    - n_layers (int, optional): Number of layers. Defaults to 6</span>
+<span class="sd">                    - pre_norm (bool, optional): Whether to use pre-norm. Defaults to True</span>
+<span class="sd">                    - device (str, optional): Device to use. Defaults to &#39;cpu&#39;</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If neither src_vocab nor tgt_vocab is specified in the configuration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">ModelConfig</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="k">else</span> <span class="n">ModelConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;model_type&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;src_vocab&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="s1">&#39;tgt_vocab&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;model_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;encoder-decoder&#39;</span>
+                <span class="k">elif</span> <span class="s1">&#39;src_vocab&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;model_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;encoder-only&#39;</span>
+                <span class="k">elif</span> <span class="s1">&#39;tgt_vocab&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;model_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;decoder-only&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Must specify at least &#39;src_vocab&#39; </span><span class="se">\</span>
+<span class="s2">                                        or &#39;tgt_vocab&#39; in configuration.&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="n">config_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;d_model&#39;</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span>
+                <span class="s1">&#39;d_ff&#39;</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
+                <span class="s1">&#39;n_heads&#39;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+                <span class="s1">&#39;dropout&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s1">&#39;n_layers&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="s1">&#39;pre_norm&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="s1">&#39;cpu&#39;</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">config_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config_dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseTransformer.encode">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer.encode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forwards the encode method call to the underlying model.</span>
+<span class="sd">        This method attempts to call the &#39;encode&#39; method on the underlying model instance.</span>
+<span class="sd">        If the model does not have an encode method, it raises an AttributeError.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Variable length argument list to pass to model&#39;s encode method</span>
+<span class="sd">            **kwargs: Arbitrary keyword arguments to pass to model&#39;s encode method</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: The encoded output from the model&#39;s encode method</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the underlying model does not have an encode method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="s1">&#39;encode&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; has no encode method&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseTransformer.decode">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer.decode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decodes the model&#39;s output.</span>
+<span class="sd">        This method attempts to call the decode method of the underlying model if it exists.</span>
+<span class="sd">        If the model doesn&#39;t have a decode method, it raises an AttributeError.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Variable length argument list to pass to model&#39;s decode method.</span>
+<span class="sd">            **kwargs: Arbitrary keyword arguments to pass to model&#39;s decode method.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The decoded output from the model&#39;s decode method.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the underlying model doesn&#39;t have a decode method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="s1">&#39;decode&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; has no decode method&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseTransformer.forward">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer.forward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass of the model wrapper.</span>
+<span class="sd">        This method performs a forward pass by delegating to the underlying model&#39;s forward method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args: Variable length argument list to be passed to the underlying model.</span>
+<span class="sd">            **kwargs: Arbitrary keyword arguments to be passed to the underlying model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            torch.Tensor: The output tensor from the model&#39;s forward pass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fallback method to get attributes from configuration or model.</span>
+
+<span class="sd">        This method is called when an attribute is not found in the normal places. It first checks</span>
+<span class="sd">        if the attribute exists in the configuration object, then checks the model object. If the</span>
+<span class="sd">        attribute is not found in either place, it raises an AttributeError.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): The name of the attribute to get.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: The value of the attribute from either config or model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: If the attribute is not found in either config or model.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; instance.some_attribute  # If not found directly, this method is called</span>
+<span class="sd">            &gt;&gt;&gt; # Checks self.config.some_attribute, then self.model.some_attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; object has no attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        String representation of the model showing architecture.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Model name and architecture details</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_repr</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">(</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="c1"># Add config parameters</span>
+        <span class="n">model_repr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;  (config): </span><span class="si">{</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="c1"># Add underlying model architecture</span>
+        <span class="n">base_model_repr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+        <span class="c1"># Indent the base model representation</span>
+        <span class="n">base_model_repr</span> <span class="o">=</span> <span class="s1">&#39;  &#39;</span> <span class="o">+</span> <span class="n">base_model_repr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">  &#39;</span><span class="p">)</span>
+        <span class="n">model_repr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;  (base_model): </span><span class="si">{</span><span class="n">base_model_repr</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="c1"># Add other important attributes</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;encoder&#39;</span><span class="p">,</span> <span class="s1">&#39;decoder&#39;</span><span class="p">,</span> <span class="s1">&#39;generator&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="n">attr_repr</span> <span class="o">=</span> <span class="n">attr</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+                <span class="c1"># Indent the attribute representation</span>
+                <span class="n">attr_repr</span> <span class="o">=</span> <span class="s1">&#39;  &#39;</span> <span class="o">+</span> <span class="n">attr_repr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">  &#39;</span><span class="p">)</span>
+                <span class="n">model_repr</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">&#39;  (</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">): </span><span class="si">{</span><span class="n">attr_repr</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="n">model_repr</span> <span class="o">+=</span> <span class="s1">&#39;)&#39;</span>
+        <span class="k">return</span> <span class="n">model_repr</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the total number of layers.&quot;&quot;&quot;</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">config</span>
+        <span class="k">return</span> <span class="n">c</span><span class="o">.</span><span class="n">n_layers</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n_layers</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseTransformer.save">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save the configuration and model state.</span>
+
+<span class="sd">        Saves the model&#39;s configuration and state dictionary to a file at the specified path.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): The file path where the model and configuration will be saved.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; model.save(</span>
+<span class="sd">            ...     &#39;model_checkpoint.pt&#39;</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">({</span><span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;model_state&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()},</span> <span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseTransformer.load">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.BaseTransformer.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load configuration and model state from file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path (str): Path to the checkpoint file containing model configuration and state.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: If the checkpoint file does not exist.</span>
+<span class="sd">            RuntimeError: If the checkpoint file is corrupted or incompatible.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;model_state&#39;</span><span class="p">])</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FlexiTransformer">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.FlexiTransformer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FlexiTransformer</span><span class="p">(</span><span class="n">BaseTransformer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class provides a flexible implementation that can be configured for different</span>
+<span class="sd">    transformer architectures including BERT-style encoder-only models, GPT-style decoder-only</span>
+<span class="sd">    models, and full encoder-decoder transformer models.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        src_vocab (int, optional): Size of source vocabulary for encoder. Required for encoder-only</span>
+<span class="sd">            and encoder-decoder models.</span>
+<span class="sd">        tgt_vocab (int, optional): Size of target vocabulary for decoder. Required for decoder-only</span>
+<span class="sd">            and encoder-decoder models.</span>
+<span class="sd">        n_layers (int, optional): Number of transformer layers. Defaults to model&#39;s default setting.</span>
+<span class="sd">        n_heads (int, optional): Number of attention heads. Defaults to model&#39;s default setting.</span>
+<span class="sd">        **kwargs: Additional keyword arguments passed to parent BaseTransformer class.</span>
+<span class="sd">    Examples:</span>
+<span class="sd">        Encoder-only (BERT-style):</span>
+<span class="sd">        Decoder-only (GPT-style):</span>
+<span class="sd">        Encoder-Decoder (Transformer-style):</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        This class uses a ConfigDescriptor for managing model configuration and provides</span>
+<span class="sd">        flexible initialization through either a configuration dictionary/object or</span>
+<span class="sd">        individual parameter settings.</span>
+
+<span class="sd">    usage:</span>
+<span class="sd">    &gt;&gt;&gt; config = {</span>
+<span class="sd">    ...     &#39;model_type&#39;: &#39;encoder-decoder&#39;,</span>
+<span class="sd">    ...     &#39;src_vocab&#39;: 1000,</span>
+<span class="sd">    ...     &#39;tgt_vocab&#39;: 1000,</span>
+<span class="sd">    ...     &#39;d_model&#39;: 768,</span>
+<span class="sd">    ...     &#39;n_heads&#39;: 12,</span>
+<span class="sd">    ...     &#39;n_layers&#39;: 12,</span>
+<span class="sd">    ...     &#39;pe_type&#39;: &#39;absolute&#39;,</span>
+<span class="sd">    ...     &#39;init_method&#39;: &#39;xavier_uniform&#39;,</span>
+<span class="sd">    ...     &#39;pre_norm&#39;: True,</span>
+<span class="sd">    ... }</span>
+
+<span class="sd">    &gt;&gt;&gt; transformer = FlexiTransformer(</span>
+<span class="sd">    ...     **config</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; output = (</span>
+<span class="sd">    ...     transformer(</span>
+<span class="sd">    ...         input_ids</span>
+<span class="sd">    ...     )</span>
+<span class="sd">    ... )</span>
+
+<span class="sd">    &gt;&gt;&gt; config = {</span>
+<span class="sd">    ...     &#39;model_type&#39;: &#39;encoder-only&#39;,</span>
+<span class="sd">    ...     &#39;src_vocab&#39;: 1000,</span>
+<span class="sd">    ...     &#39;d_model&#39;: 768,</span>
+<span class="sd">    ...     &#39;n_heads&#39;: 12,</span>
+<span class="sd">    ...     &#39;n_layers&#39;: 12,</span>
+<span class="sd">    ...     &#39;pe_type&#39;: &#39;absolute&#39;,</span>
+<span class="sd">    ...     &#39;init_method&#39;: &#39;xavier_uniform&#39;,</span>
+<span class="sd">    ...     &#39;pre_norm&#39;: True,</span>
+<span class="sd">    ... }</span>
+
+<span class="sd">    &gt;&gt;&gt; BERT = FlexiTransformer(</span>
+<span class="sd">    ...     **config</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; output = (</span>
+<span class="sd">    ...     transformer(</span>
+<span class="sd">    ...         input_ids</span>
+<span class="sd">    ...     )</span>
+<span class="sd">    ... )</span>
+
+<span class="sd">    &gt;&gt;&gt; config = {</span>
+<span class="sd">    ...     &#39;model_type&#39;: &#39;decoder-only&#39;,</span>
+<span class="sd">    ...     &#39;tgt_vocab&#39;: 1000,</span>
+<span class="sd">    ...     &#39;d_model&#39;: 768,</span>
+<span class="sd">    ...     &#39;n_heads&#39;: 12,</span>
+<span class="sd">    ...     &#39;n_layers&#39;: 12,</span>
+<span class="sd">    ...     &#39;pe_type&#39;: &#39;absolute&#39;,</span>
+<span class="sd">    ...     &#39;init_method&#39;: &#39;xavier_uniform&#39;,</span>
+<span class="sd">    ...     &#39;pre_norm&#39;: True,</span>
+<span class="sd">    ... }</span>
+
+<span class="sd">    &gt;&gt;&gt; GPT = FlexiTransformer(</span>
+<span class="sd">    ...     **config</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; output = (</span>
+<span class="sd">    ...     transformer(</span>
+<span class="sd">    ...         input_ids</span>
+<span class="sd">    ...     )</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the FlexiTransformer model with the given configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs: The configuration options for the model.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TransformerModel">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.TransformerModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransformerModel</span><span class="p">(</span><span class="n">FlexiTransformer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A flexible implementation of the Transformer architecture.</span>
+
+<span class="sd">    This class implements a configurable Transformer model that can be adapted for</span>
+<span class="sd">    various sequence-to-sequence tasks. It extends the FlexiTransformer base class</span>
+<span class="sd">    with specific configurations for a standard Transformer architecture.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        src_vocab (int): Size of the source vocabulary.</span>
+<span class="sd">        tgt_vocab (int): Size of the target vocabulary.</span>
+<span class="sd">        d_model (int, optional): Dimension of the model&#39;s hidden states. Defaults to 512.</span>
+<span class="sd">        n_heads (int, optional): Number of attention heads in multi-head attention layers.</span>
+<span class="sd">            Defaults to 8.</span>
+<span class="sd">        n_layers (int, optional): Number of encoder and decoder layers. Defaults to 6.</span>
+<span class="sd">        pe_type (str, optional): Type of positional encoding to use (&#39;absolute&#39; or &#39;relative&#39;).</span>
+<span class="sd">            Defaults to &#39;absolute&#39;.</span>
+<span class="sd">        init_method (str, optional): Weight initialization method. Defaults to &#39;xavier_uniform&#39;.</span>
+<span class="sd">        pre_norm (bool, optional): If True, uses pre-layer normalization architecture.</span>
+<span class="sd">            If False, uses post-layer normalization. Defaults to True.</span>
+
+<span class="sd">        **kwargs: Additional arguments passed to the parent FlexiTransformer class.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The model uses identical number of layers for both encoder and decoder parts.</span>
+<span class="sd">        For different encoder/decoder depths, use the base FlexiTransformer class directly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src_vocab</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">tgt_vocab</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">d_model</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">n_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="n">pe_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span>
+        <span class="n">init_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;xavier_uniform&#39;</span><span class="p">,</span>
+        <span class="n">pre_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">src_vocab</span><span class="o">=</span><span class="n">src_vocab</span><span class="p">,</span>
+            <span class="n">tgt_vocab</span><span class="o">=</span><span class="n">tgt_vocab</span><span class="p">,</span>
+            <span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;encoder-decoder&#39;</span><span class="p">,</span>
+            <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span>
+            <span class="n">n_heads</span><span class="o">=</span><span class="n">n_heads</span><span class="p">,</span>
+            <span class="n">pre_norm</span><span class="o">=</span><span class="n">pre_norm</span><span class="p">,</span>
+            <span class="n">pe_type</span><span class="o">=</span><span class="n">pe_type</span><span class="p">,</span>
+            <span class="n">init_method</span><span class="o">=</span><span class="n">init_method</span><span class="p">,</span>
+            <span class="n">n_layers</span><span class="o">=</span><span class="p">(</span><span class="n">n_layers</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="FlexiBERT">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.FlexiBERT">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FlexiBERT</span><span class="p">(</span><span class="n">BaseTransformer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A flexible BERT-style transformer implementation that can be configured for various tasks.</span>
+<span class="sd">    This class extends BaseTransformer to provide a configurable BERT-like architecture</span>
+<span class="sd">    with flexible positional encoding, normalization, and initialization options.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        src_vocab (int): Size of source vocabulary.</span>
+<span class="sd">        num_classes (int, optional): Number of output classes for classification. Defaults to 2.</span>
+<span class="sd">        d_model (int, optional): Dimension of model embeddings. Defaults to 512.</span>
+<span class="sd">        n_heads (int, optional): Number of attention heads. Defaults to 8.</span>
+<span class="sd">        n_layers (int, optional): Number of transformer layers. Defaults to 6.</span>
+<span class="sd">        pe_type (str, optional): Type of positional encoding to use. Defaults to &#39;alibi&#39;.</span>
+<span class="sd">        init_method (str, optional): Weight initialization method. Defaults to &#39;xavier_uniform&#39;.</span>
+<span class="sd">        pre_norm (bool, optional): If True, uses pre-norm architecture variant. Defaults to True.</span>
+<span class="sd">        **kwargs: Additional keyword arguments passed to BaseTransformer.</span>
+
+<span class="sd">    Methods:</span>
+<span class="sd">        reconfigure_head(new_head: nn.Module) -&gt; None:</span>
+<span class="sd">            Replaces the classification head with a new module.</span>
+
+<span class="sd">        __call__(*args, **kwargs):</span>
+<span class="sd">            Forward pass through the model. Delegates to internal model instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src_vocab</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_classes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">d_model</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">n_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="n">pe_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;alibi&#39;</span><span class="p">,</span>
+        <span class="n">init_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;xavier_uniform&#39;</span><span class="p">,</span>
+        <span class="n">pre_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the FlexiBERT model with the given configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            src_vocab (int): Size of the source vocabulary.</span>
+<span class="sd">            num_classes (int, optional): Number of output classes for classification. Defaults to 2.</span>
+<span class="sd">            d_model (int, optional): Dimension of model embeddings. Defaults to 512.</span>
+<span class="sd">            n_heads (int, optional): Number of attention heads. Defaults to 8.</span>
+<span class="sd">            n_layers (int, optional): Number of transformer layers. Defaults to 6.</span>
+<span class="sd">            pe_type (str, optional): Type of positional encoding to use. Defaults to &#39;alibi&#39;.</span>
+<span class="sd">            init_method (str, optional): Weight initialization method. Defaults to &#39;xavier_uniform&#39;.</span>
+<span class="sd">            pre_norm (bool, optional): If True, uses pre-norm architecture variant.</span>
+<span class="sd">            Defaults to True.</span>
+<span class="sd">            **kwargs: Additional keyword arguments passed to BaseTransformer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">src_vocab</span><span class="o">=</span><span class="n">src_vocab</span><span class="p">,</span>
+            <span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;encoder-only&#39;</span><span class="p">,</span>
+            <span class="n">num_classes</span><span class="o">=</span><span class="n">num_classes</span><span class="p">,</span>
+            <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span>
+            <span class="n">n_heads</span><span class="o">=</span><span class="n">n_heads</span><span class="p">,</span>
+            <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="n">pre_norm</span><span class="o">=</span><span class="n">pre_norm</span><span class="p">,</span>
+            <span class="n">pe_type</span><span class="o">=</span><span class="n">pe_type</span><span class="p">,</span>
+            <span class="n">init_method</span><span class="o">=</span><span class="n">init_method</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="FlexiBERT.reconfigure_head">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.FlexiBERT.reconfigure_head">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reconfigure_head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_head</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the classification head of the model with a new one.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_head (nn.Module): New classification head module to replace the existing one.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Examples:</span>
+<span class="sd">            &gt;&gt;&gt; model.reconfigure_head(</span>
+<span class="sd">            ...     new_head=nn.Linear(</span>
+<span class="sd">            ...         512, 10</span>
+<span class="sd">            ...     )</span>
+<span class="sd">            ... )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">new_head</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FlexiGPT">
+<a class="viewcode-back" href="../../flexit.html#flexit.models.FlexiGPT">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FlexiGPT</span><span class="p">(</span><span class="n">BaseTransformer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A flexible GPT-style transformer implementation that can be configured for various tasks.</span>
+<span class="sd">    This class implements a GPT-style decoder-only transformer that can be customized for</span>
+<span class="sd">    different language modeling tasks. It inherits from BaseTransformer and provides a</span>
+<span class="sd">    configurable architecture through various parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tgt_vocab (int): Size of target vocabulary.</span>
+<span class="sd">        d_model (int, optional): Dimension of model embeddings and hidden states. Defaults to 512.</span>
+<span class="sd">        n_heads (int, optional): Number of attention heads in each layer. Defaults to 8.</span>
+<span class="sd">        n_layers (int, optional): Number of transformer layers. Defaults to 6.</span>
+<span class="sd">        pe_type (str, optional): Type of positional encoding to use (&#39;rotary&#39;, &#39;absolute&#39;, etc).</span>
+<span class="sd">            Defaults to &#39;rotary&#39;.</span>
+<span class="sd">        init_method (str, optional): Weight initialization method. Defaults to &#39;xavier_uniform&#39;.</span>
+<span class="sd">        pre_norm (bool, optional): Whether to use pre-layer normalization. Defaults to True.</span>
+<span class="sd">        **kwargs: Additional keyword arguments passed to the base transformer.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; model = FlexiGPT(</span>
+<span class="sd">        ...     tgt_vocab=50000,</span>
+<span class="sd">        ...     d_model=768,</span>
+<span class="sd">        ...     n_heads=12,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; output = model(</span>
+<span class="sd">        ...     input_ids</span>
+<span class="sd">        ... )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">tgt_vocab</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">d_model</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">n_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">n_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+        <span class="n">pe_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;rotary&#39;</span><span class="p">,</span>
+        <span class="n">init_method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;xavier_uniform&#39;</span><span class="p">,</span>
+        <span class="n">pre_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the FlexiGPT model with the given configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tgt_vocab (int): The size of the target vocabulary.</span>
+<span class="sd">            d_model (int, optional): The dimension of model embeddings and hidden states.</span>
+<span class="sd">                Default is 512.</span>
+<span class="sd">            n_heads (int, optional): The number of attention heads in each layer. Default is 8.</span>
+<span class="sd">            n_layers (int, optional): The number of transformer layers. Default is 6.</span>
+<span class="sd">            pe_type (str, optional): The type of positional encoding to use. Default is &#39;rotary&#39;.</span>
+<span class="sd">            init_method (str, optional): The weight initialization method.</span>
+<span class="sd">            Default is &#39;xavier_uniform&#39;.</span>
+<span class="sd">            pre_norm (bool, optional): Whether to use pre-layer normalization. Default is True.</span>
+<span class="sd">            **kwargs: Additional keyword arguments passed to the base transformer.&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">tgt_vocab</span><span class="o">=</span><span class="n">tgt_vocab</span><span class="p">,</span>
+            <span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;decoder-only&#39;</span><span class="p">,</span>
+            <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span>
+            <span class="n">n_heads</span><span class="o">=</span><span class="n">n_heads</span><span class="p">,</span>
+            <span class="n">n_layers</span><span class="o">=</span><span class="n">n_layers</span><span class="p">,</span>
+            <span class="n">pe_type</span><span class="o">=</span><span class="n">pe_type</span><span class="p">,</span>
+            <span class="n">init_method</span><span class="o">=</span><span class="n">init_method</span><span class="p">,</span>
+            <span class="n">pre_norm</span><span class="o">=</span><span class="n">pre_norm</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Ahmed Elshahawy.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
