@@ -1,27 +1,38 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PyPI version](https://pypi.org/project/flexitransformers/0.1.0/)](https://pypi.org/project/flexitransformers/) [![Documentation Status](https://readthedocs.org/projects/flexitransformers/badge/?version=latest)]([https://flexitransformers.readthedocs.io/en/latest/?badge=latest](https://a-elshahawy.github.io/FlexiTransformers/)](https://a-elshahawy.github.io/FlexiTransformers/)) [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+# FlexiTransformers: Modular Transformer Framework
 
-**FlexiTransformers** is a Python library designed to provide a flexible and extensible foundation for building and experimenting with various Transformer architectures. Whether you're interested in classic Encoder-Decoder models, Encoder-only models like BERT, or Decoder-only models like GPT, FlexiTransformers offers the building blocks and abstractions to get you started quickly and customize deeply.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/flexitransformers.svg)](https://pypi.org/project/flexitransformers/0.1.0/)
+[![Homepage](https://img.shields.io/badge/Homepage-GitHub-blue)](https://github.com/A-Elshahawy/flexitransformers)
 
-## ✨ Features
+**A Python library for building flexible and modular transformer models. Design and experiment with encoder-decoder, encoder-only, and decoder-only architectures, leveraging various attention mechanisms and configurations to suit your specific NLP needs.**
 
-- **Modular Architecture:**  Components like attention mechanisms, positional embeddings, and layers are designed to be easily swappable and extensible.
-- **Versatile Model Types:** Supports Encoder-Decoder, Encoder-only (BERT-style), and Decoder-only (GPT-style) models within a unified framework.
-- **Multiple Attention Mechanisms:** Includes implementations of standard Multi-Head Attention, Rotary Position Embedding (RoPE) Attention, ALiBi Attention, and Relative Global Attention.
-- **Flexible Positional Embeddings:** Offers Absolute Positional Encoding, Rotary Positional Encoding, and ALiBi Positional Encoding.
-- **Config-Driven Models:** Define model architectures through intuitive `ModelConfig` dataclasses, making it easy to manage and reproduce experiments.
-- **Training Utilities:** Provides a `Trainer` class with built-in support for callbacks like checkpointing and early stopping, simplifying the training loop.
-- **Rich Progress Monitoring:** Leverages `rich` library for visually appealing and informative training progress bars and summaries.
-- **Extensible Callbacks:** Implement custom behaviors during training using the `Callback` base class, for logging, visualization, and more.
-- **Easy Inference:**  Includes `predict` methods for straightforward model inference and generation.
-- **Clear and Commented Code:**  Designed for readability and ease of understanding, making it suitable for both research and educational purposes.
+## Introduction
 
-## 🛠️ Installation
+FlexiTransformers is designed to provide a highly modular and customizable framework for building transformer-based models. Whether you're interested in sequence-to-sequence tasks, classification, or language modeling, FlexiTransformers offers the building blocks and flexibility to construct the right architecture.
 
-You can install FlexiTransformers via pip:
+This library addresses the need for adaptable transformer models by allowing you to easily:
+
+*   **Choose your architecture:** Implement encoder-decoder, encoder-only (like BERT), or decoder-only (like GPT) models with a unified framework.
+*   **Experiment with attention mechanisms:** Select from Absolute, ALiBi, Relative, and Rotary attention to optimize for performance and task.
+*   **Configure positional embeddings:** Utilize Absolute, ALiBi, or Rotary positional encodings, or even none, depending on your model requirements.
+*   **Customize model components:** Easily adjust the number of layers, attention heads, hidden dimensions, and more through a clear configuration system.
+*   **Utilize training utilities:** Benefit from built-in training loops, learning rate scheduling, and callback mechanisms for checkpointing and early stopping.
+
+FlexiTransformers aims to be a versatile tool for researchers, developers, and practitioners looking to explore and implement various transformer architectures without getting bogged down in boilerplate code.
+
+## Installation
+
+### Prerequisites
+
+*   Python 3.11 or higher
+*   PyTorch 2.0.1 or higher
+
+You can install PyTorch following the instructions on the [official PyTorch website](https://pytorch.org/get-started/locally/). Make sure to select the appropriate installation command based on your operating system, CUDA version, and other preferences.
+
+### Install FlexiTransformers via pip
 
 ```bash
 pip install flexitransformers
-```
 
 **Optional dependencies:**
 
