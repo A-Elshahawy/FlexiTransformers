@@ -53,7 +53,7 @@ dev = [
 
 # Correct package structure based on directory layout
 [tool.setuptools]
-packages = ["flexit"]
+packages = ["flexit"] 
 
 # Include package data
 [tool.setuptools.package-data]
