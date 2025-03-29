@@ -35,5 +35,8 @@ jobs:
     - name: Build package
       run: python -m build
 
-    - name: Publish via OIDC
+    - name: Publish via API Token
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        username: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
