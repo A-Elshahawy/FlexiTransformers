@@ -6,7 +6,8 @@
 
 ---
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PyPI version](https://badge.fury.io/py/flexitransformers.svg)](https://pypi.org/project/flexitransformers/0.1.1/) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/) [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/) [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[
+    ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)   [![PyPI version](https://badge.fury.io/py/flexitransformers.svg)](https://pypi.org/project/flexitransformers/0.1.1/)   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)    [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/)   [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/)   [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 **Build, Experiment, and Innovate with Transformers. FlexiTransformers is a Python library designed for maximum flexibility in constructing and training transformer models. Craft encoder-decoder, encoder-only (BERT-style), and decoder-only (GPT-style) architectures with ease, choosing from a variety of attention mechanisms and configurations to power your NLP projects.**
 
@@ -50,7 +51,6 @@ The easiest way to install FlexiTransformers is using pip:
 ```bash
 pip install flexitransformers
 ```
-
 
 **For the latest, development version, install directly from GitHub:**
 
