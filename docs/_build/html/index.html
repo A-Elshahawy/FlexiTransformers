@@ -160,6 +160,7 @@ window.addEventListener("load", () => mermaid.run());
     <span class="n">src_vocab</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
     <span class="n">num_classes</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">d_model</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span>
+    <span class="n">ff_activation</span><span class="o">=</span><span class="s1">&#39;gelu&#39;</span><span class="p">,</span>
     <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;alibi&#39;</span>
 <span class="p">)</span>
 </pre></div>
@@ -172,7 +173,8 @@ window.addEventListener("load", () => mermaid.run());
 <span class="n">gpt_model</span> <span class="o">=</span> <span class="n">FlexiGPT</span><span class="p">(</span>
     <span class="n">tgt_vocab</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span>
     <span class="n">d_model</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
-    <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;rotary&#39;</span>
+    <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;rotary&#39;</span><span class="p">,</span>
+    <span class="n">pre</span><span class="o">-</span><span class="n">norm</span><span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
 </pre></div>
 </div>
