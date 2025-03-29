@@ -15,7 +15,6 @@ jobs:
       name: pypi
 
     permissions:
-      id-token: write
       contents: read
 
     steps:
