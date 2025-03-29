@@ -27,7 +27,7 @@ FlexiTransformers empowers you to explore the vast landscape of transformer arch
 
 FlexiTransformers is your versatile toolkit for pushing the boundaries of transformer models, whether you are a researcher exploring novel architectures, a developer building NLP applications, or a practitioner seeking efficient and customizable solutions.
 
-## 🛠️ Installation
+FlexiTransformers is designed to provide a highly modular and customizable framework for building transformer-based models. Whether you're interested in sequence-to-sequence tasks, classification, or language modeling, FlexiTransformers offers the building blocks and flexibility to construct the right architecture.
 
 ### Prerequisites
 
@@ -49,7 +49,6 @@ The easiest way to install FlexiTransformers is using pip:
 
 ```bash
 pip install flexitransformers
-```
 
 **For the latest, development version, install directly from GitHub:**
 
