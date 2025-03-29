@@ -49,6 +49,8 @@ The easiest way to install FlexiTransformers is using pip:
 
 ```bash
 pip install flexitransformers
+```
+
 
 **For the latest, development version, install directly from GitHub:**
 
