@@ -8,7 +8,7 @@ including checkpointing and early stopping.
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from typing_extensions import override  # noqa: UP035
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from .train import Trainer
