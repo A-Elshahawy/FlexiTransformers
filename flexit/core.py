@@ -5,11 +5,10 @@ This module implements the core components of transformer models,
 including encoder, decoder, generator, and the encoder-decoder architecture.
 """
 
-from typing import Self
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from typing_extensions import Self
 
 from .layers import LayerNorm
 from .utils import clone

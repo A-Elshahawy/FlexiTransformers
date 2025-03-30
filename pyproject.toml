@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flexitransformers"
-version = "0.1.1"
+version = "0.1.2"
 
 description = """
             This repository provides a flexible and modular implementation of the Transformer architecture,
@@ -76,7 +76,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "N", "UP","W", "C4", "RUF", "SIM"]
-ignore = ["UP008", "N812", "N806", "E701"]
+ignore = ["UP008", "N812", "N806", "E701", "UP035"]
 fixable = ["ALL"]
 
 [tool.ruff.format]
