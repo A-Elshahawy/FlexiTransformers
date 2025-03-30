@@ -63,7 +63,7 @@ class BaseTransformer(Generic[T], nn.Module):
             **kwargs: Keyword arguments for model configuration.
         """
         super().__init__()
-        self._initialize_config(args, kwargs)
+        self._initialize_config(*args, **kwargs)
 
         self.factory = TransformerFactory(config=cast(ModelConfig, self.config))
         self._base_model = self.factory.create_model()
