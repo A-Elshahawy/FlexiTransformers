@@ -1,8 +1,6 @@
 # FlexiTransformers: Modular Transformer Framework
 
-<p align="center">
-    <img src="docs/_static/logo.png" alt="FlexiTransformers Logo">
-</p>
+    ![FlexiTransformers Logo](docs/_static/logo.png)
 
 ---
 
