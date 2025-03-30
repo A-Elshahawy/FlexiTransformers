@@ -213,7 +213,7 @@ trainer = train.Trainer( # Use flexit.train
 
 # 🚄 Start Training
 metrics = trainer.fit(epochs=5) # Train for 5 epochs
-print(metrics)
+print(metrics.to_dict())
 ```
 
 **For more advanced examples and training configurations, explore the** [examples directory](https://www.google.com/url?sa=E&q=link-to-examples-if-available) **(coming soon).**
@@ -313,7 +313,7 @@ git checkout -b bugfix/fix-issue-xyz
 
   You can find me on:
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ahmed-elshahawy-a42149218/) [![Gmail](https://img.shields.io/badge/Gmail-Email-red?style=flat&logo=gmail)](mailto:ahmedelshahawy078@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ahmed-elshahawy-a42149218/)  [![Gmail](https://img.shields.io/badge/Gmail-Email-red?style=flat&logo=gmail)](mailto:ahmedelshahawy078@gmail.com)
 
 ---
 
