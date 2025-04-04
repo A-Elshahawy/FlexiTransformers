@@ -32,12 +32,12 @@ FlexiTransformers is designed to provide a highly modular and customizable frame
 
 ### Prerequisites
 
-* **Python:** 3.11 or higher
+* **Python:** 3.10 or higher
 * **PyTorch:** 2.0.1 or higher (Install instructions available at [pytorch.org](https://pytorch.org/get-started/locally/))
 * **Required Packages:** Ensure you have the following packages installed:
 
   ```bash
-  pip install matplotlib>=3.10.1 numpy>=2.2.3 rich>=13.9.4 torch>=2.0.1
+  pip install rich>=13.9.4 torch>=2.0.1
   ```
 
   These packages are essential for FlexiTransformers to function correctly.
