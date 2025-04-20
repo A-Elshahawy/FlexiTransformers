@@ -267,6 +267,7 @@ def run_epoch(
         optimizer: Optimization algorithm
         scheduler: Learning rate scheduler
         mode: Training mode ('train', 'eval', 'train+log')
+        max_batches: Maximum number of batches to process
         accum_iter: Gradient accumulation steps
         train_state: Training state tracker
         device: Computation device
