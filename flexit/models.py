@@ -421,6 +421,8 @@ class TransformerModel(FlexiTransformer):
         init_method (str, optional): Weight initialization method. Defaults to 'xavier_uniform'.
         pre_norm (bool, optional): If True, uses pre-layer normalization architecture.
             If False, uses post-layer normalization. Defaults to True.
+        mask_eps (float, optional): Mask epsilon value for attention. Defaults to 1e-9.
+        device (str, optional): Device for computation ('cpu' or 'gpu'). Defaults to 'cpu'.
 
         **kwargs: Additional arguments passed to the parent FlexiTransformer class.
 
@@ -439,6 +441,7 @@ class TransformerModel(FlexiTransformer):
         pe_type: str = 'absolute',
         init_method: str = 'xavier_uniform',
         pre_norm: bool = True,
+        mask_eps: float = 1e-9,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -470,6 +473,7 @@ class FlexiBERT(BaseTransformer):
         pe_type (str, optional): Type of positional encoding to use. Defaults to 'alibi'.
         init_method (str, optional): Weight initialization method. Defaults to 'xavier_uniform'.
         pre_norm (bool, optional): If True, uses pre-norm architecture variant. Defaults to True.
+        mask_eps (float, optional): Mask epsilon value for attention. Defaults to 1e-9.
         **kwargs: Additional keyword arguments passed to BaseTransformer.
 
     Methods:
@@ -490,6 +494,7 @@ class FlexiBERT(BaseTransformer):
         pe_type: str = 'alibi',
         init_method: str = 'xavier_uniform',
         pre_norm: bool = True,
+        mask_eps: float = 1e-9,
         **kwargs: Any,
     ) -> None:
         """
@@ -505,6 +510,7 @@ class FlexiBERT(BaseTransformer):
             init_method (str, optional): Weight initialization method. Defaults to 'xavier_uniform'.
             pre_norm (bool, optional): If True, uses pre-norm architecture variant.
             Defaults to True.
+            mask_eps (float, optional): Mask epsilon value for attention. Defaults to 1e-9.
             **kwargs: Additional keyword arguments passed to BaseTransformer.
         """
         super().__init__(
@@ -556,6 +562,7 @@ class FlexiGPT(BaseTransformer):
             Defaults to 'rotary'.
         init_method (str, optional): Weight initialization method. Defaults to 'xavier_uniform'.
         pre_norm (bool, optional): Whether to use pre-layer normalization. Defaults to True.
+        mask_eps (float, optional): Mask epsilon value for attention. Defaults to 1e-9.
         **kwargs: Additional keyword arguments passed to the base transformer.
 
     Example:
@@ -578,6 +585,7 @@ class FlexiGPT(BaseTransformer):
         pe_type: str = 'rotary',
         init_method: str = 'xavier_uniform',
         pre_norm: bool = True,
+        mask_eps: float = 1e-9,
         **kwargs: Any,
     ) -> None:
         """

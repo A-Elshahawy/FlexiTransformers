@@ -22,6 +22,7 @@ class ModelConfig:
         n_heads: Number of attention heads. Default is 8.
         dropout: Dropout probability. Default is 0.1.
         n_layers: Number of layers. Default is 6.
+        mask_eps: Mask epsilon value for attention. Default is 1e-9.
         model_type: Model type. Options are:
             - 'encoder-decoder'
             - 'encoder-only'

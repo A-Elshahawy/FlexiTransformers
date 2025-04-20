@@ -26,7 +26,12 @@ class DecoderStrategy:
 
     @staticmethod
     def decode(
-        model: nn.Module, src: torch.Tensor, src_mask: torch.Tensor, max_len: int, start_symbol: int
+        model: nn.Module,
+        src: torch.Tensor,
+        src_mask: torch.Tensor,
+        max_len: int,
+        start_symbol: int,
+        end_symbol: int | None = None,
     ) -> torch.Tensor:
         raise NotImplementedError
 
@@ -43,29 +48,62 @@ class EncoderDecoderStrategy(DecoderStrategy):
 
     @staticmethod
     def decode(
-        model: nn.Module, src: torch.Tensor, src_mask: torch.Tensor, max_len: int, start_symbol: int
+        model: nn.Module,
+        src: torch.Tensor,
+        src_mask: torch.Tensor,
+        max_len: int,
+        start_symbol: int,
+        end_symbol: int | None = None,
     ) -> torch.Tensor:
         """
-        Perform decoding using the specified strategy.
+        Perform batched decoding using the encoder-decoder architecture.
 
         Args:
             model: Transformer model.
-            src (torch.Tensor): Source sequence.
-            src_mask (torch.Tensor): Source mask.
+            src (torch.Tensor): Source sequence with shape [batch_size, seq_len].
+            src_mask (torch.Tensor): Source mask with shape [batch_size, 1, seq_len].
             max_len (int): Maximum length for decoding.
-            start_symbol (int): Start symbol for decoding.
+            start_symbol (int): Start symbol token ID.
+            end_symbol (int, optional): End symbol token ID for early stopping.
 
         Returns:
-            torch.Tensor: Decoded sequence.
+            torch.Tensor: Decoded sequences with shape [batch_size, seq_len].
         """
+        batch_size = src.size(0)
+        device = src.device
+
+        # Encode the source sequence once
         memory = model.encode(src, src_mask)
-        ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data)
+
+        # Initialize with start token for each batch item
+        ys = torch.full((batch_size, 1), start_symbol, device=device).type_as(src)
+
+        # Track which sequences have completed (generated end token)
+        completed = torch.zeros(batch_size, dtype=torch.bool, device=device)
+
         for _ in range(max_len - 1):
-            out = model.decode(memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data))
-            prob = model.generator(out[:, -1])
-            _, next_word = torch.max(prob, dim=1)
-            next_word = next_word.data[0]
-            ys = torch.cat([ys, torch.zeros(1, 1).type_as(src.data).fill_(next_word)], dim=1)
+            # Create appropriate target mask for current target length
+            tgt_mask = subsequent_mask(ys.size(1)).type_as(src.data).to(device)
+
+            # Decode next tokens
+            out = model.decode(memory, src_mask, ys, tgt_mask)
+            logits = model.generator(out[:, -1])
+
+            # Get most probable token for each sample in batch
+            _, next_word = torch.max(logits, dim=1)
+            next_word = next_word.unsqueeze(1)
+
+            # Append new tokens
+            ys = torch.cat([ys, next_word], dim=1)
+
+            # Check for end token if specified
+            if end_symbol is not None:
+                # Mark sequences that produced the end token
+                completed = completed | (next_word.squeeze(1) == end_symbol)
+                # If all sequences have produced end token, we can stop
+                if completed.all():
+                    break
+
         return ys
 
 
@@ -86,42 +124,71 @@ class DecoderOnlyStrategy(DecoderStrategy):
         src_mask: torch.Tensor | None,
         max_len: int,
         start_symbol: int,
+        end_symbol: int | None = None,
     ) -> torch.Tensor:
         """
-        Perform decoding using decoder-only architecture.
+        Perform batched decoding using decoder-only architecture.
 
         Args:
             model (nn.Module): Transformer model.
-            src (torch.Tensor): Source sequence.
-            src_mask (torch.Tensor | None): Source mask.
+            src (torch.Tensor): Initial sequence or None. Shape [batch_size, seq_len].
+            src_mask (torch.Tensor | None): Source mask or None.
             max_len (int): Maximum length for decoding.
             start_symbol (int): Start symbol for decoding.
+            end_symbol (int, optional): End symbol token ID for early stopping.
 
         Returns:
-            torch.Tensor: Decoded sequence.
+            torch.Tensor: Decoded sequences with shape [batch_size, seq_len].
         """
         device = src.device if src is not None else next(model.parameters()).device
+
+        # Initialize sequence
         if src is None:
-            ys = torch.tensor([[start_symbol]], device=device).type_as(next(model.parameters()))
+            batch_size = 1
+            ys = torch.full((batch_size, 1), start_symbol, device=device).type_as(
+                next(model.parameters())
+            )
         else:
+            batch_size = src.size(0)
             ys = src.clone().to(device)
 
+        # Track which sequences have completed
+        completed = torch.zeros(batch_size, dtype=torch.bool, device=device)
+
         for _ in range(max_len - 1):
-            tgt_mask = subsequent_mask(ys.size(1)).type_as(ys)
+            # Create causal mask for autoregressive generation
+            tgt_mask = subsequent_mask(ys.size(1)).type_as(ys).to(device)
+
+            # Forward pass through the model
             out = model(ys, tgt_mask)
-            prob = model.generator(out[:, -1])
-            _, next_word = torch.max(prob, dim=1)
-            ys = torch.cat(
-                [ys, torch.full((1, 1), next_word.item(), device=device).type_as(ys)], dim=1
-            )
+            logits = model.generator(out[:, -1])
+
+            # Select next token
+            _, next_word = torch.max(logits, dim=1)
+            next_word = next_word.unsqueeze(1)
+
+            # Append to sequences
+            ys = torch.cat([ys, next_word], dim=1)
+
+            # Check for early stopping
+            if end_symbol is not None:
+                completed = completed | (next_word.squeeze(1) == end_symbol)
+                if completed.all():
+                    break
+
         return ys
 
 
 def greedy_decode(
-    model: nn.Module, src: torch.Tensor, src_mask: torch.Tensor, max_len: int, start_symbol: int
+    model: nn.Module,
+    src: torch.Tensor,
+    src_mask: torch.Tensor,
+    max_len: int,
+    start_symbol: int,
+    end_symbol: int | None = None,
 ) -> torch.Tensor:
     """
-    Greedy decoding function.
+    Perform greedy decoding based on model type.
 
     This function selects the appropriate decoding strategy based on the model type.
 
@@ -131,6 +198,7 @@ def greedy_decode(
         src_mask (torch.Tensor): Source mask.
         max_len (int): Maximum length for decoding.
         start_symbol (int): Start symbol for decoding.
+        end_symbol (int, optional): End symbol for early stopping.
 
     Returns:
         torch.Tensor: Decoded sequence.
@@ -139,10 +207,10 @@ def greedy_decode(
         ValueError: If model type is not supported.
     """
     strategies = {'encoder-decoder': EncoderDecoderStrategy, 'decoder-only': DecoderOnlyStrategy}
-    strategy = strategies.get(model.model_type)
+    strategy = strategies.get(getattr(model, 'model_type', 'encoder-decoder'))
     if not strategy:
-        raise ValueError(f'Unsupported model type: {model.model_type}')
-    return strategy.decode(model, src, src_mask, max_len, start_symbol)
+        raise ValueError(f'Unsupported model type: {getattr(model, "model_type", "unknown")}')
+    return strategy.decode(model, src, src_mask, max_len, start_symbol, end_symbol)
 
 
 class BertHead(nn.Module):

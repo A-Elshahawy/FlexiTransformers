@@ -5,7 +5,7 @@
 ---
 
 [
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)[![PyPI version](https://badge.fury.io/py/flexitransformers.svg?cache=0)](https://pypi.org/project/flexitransformers/0.1.4/) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/) [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/) [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) ![mypy](https://img.shields.io/badge/mypy-type%20checked-blue) ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-success)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PyPI version](https://badge.fury.io/py/flexitransformers.svg?cache=0)](https://pypi.org/project/flexitransformers/0.1.5/) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/) [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/) [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) ![mypy](https://img.shields.io/badge/mypy-type%20checked-blue) ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-success)
 
 ---
 

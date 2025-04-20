@@ -36,7 +36,9 @@ class AbstractAttention(ABC, nn.Module):
         forward: Forward pass for multi-headed attention.
     """
 
-    def __init__(self, n_heads: int, d_model: int, dropout: float = 0.1) -> None:
+    def __init__(
+        self, n_heads: int, d_model: int, dropout: float = 0.1, mask_eps: float = -1e9
+    ) -> None:
         """
         Initialize the attention mechanism.
 
@@ -55,6 +57,7 @@ class AbstractAttention(ABC, nn.Module):
         self.linears = clone(nn.Linear(d_model, d_model), 4)
         self.attn = None
         self.dropout = nn.Dropout(p=dropout)
+        self.mask_eps: float = mask_eps
 
     @abstractmethod
     def attention(
@@ -108,7 +111,7 @@ class AbstractAttention(ABC, nn.Module):
 
         query, key, value = [
             lin(x).view(nbatches, -1, self.n_heads, self.d_k).transpose(1, 2)
-            for lin, x in zip(self.linears, (query, key, value), strict=False)
+            for lin, x in zip(self.linears, (query, key, value))  # noqa: B905
         ]
 
         x, self.attn = self.attention(query, key, value, mask=mask, dropout=self.dropout)
@@ -174,7 +177,7 @@ class AbsoluteMultiHeadedAttention(AbstractAttention):
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
+            scores = scores.masked_fill(mask == 0, -self.mask_eps)
         p_attn = scores.softmax(dim=-1)
         if dropout is not None:
             p_attn = dropout(p_attn)
@@ -272,7 +275,7 @@ class RotaryMultiHeadAttention(AbstractAttention):
 
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
+            scores = scores.masked_fill(mask == 0, -self.mask_eps)
         p_attn = scores.softmax(dim=-1)
         if dropout is not None:
             p_attn = dropout(p_attn)
@@ -361,7 +364,7 @@ class ALiBiMultiHeadAttention(AbstractAttention):
         alibi_bias = alibi_bias.expand(scores.size(0), -1, -1, -1)
 
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
+            scores = scores.masked_fill(mask == 0, -self.mask_eps)
         p_attn = scores.softmax(dim=-1)
         if dropout is not None:
             p_attn = dropout(p_attn)
