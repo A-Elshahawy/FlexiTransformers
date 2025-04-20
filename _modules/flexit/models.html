@@ -149,7 +149,7 @@ window.addEventListener("load", () => mermaid.run());
 <span class="sd">            **kwargs: Keyword arguments for model configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_config</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_config</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">factory</span> <span class="o">=</span> <span class="n">TransformerFactory</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span><span class="n">ModelConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_base_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">create_model</span><span class="p">()</span>
