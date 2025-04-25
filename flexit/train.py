@@ -23,6 +23,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from .callbacks import Callback
 from .models_heads import greedy_decode
@@ -250,108 +251,89 @@ def run_epoch(
     loss_compute: Callable,
     optimizer: torch.optim.Optimizer,
     scheduler: torch.optim.lr_scheduler._LRScheduler,
-    mode: Literal['train', 'eval', 'train+log'] = 'train',
+    mode: Literal['train', 'eval'] = 'train',
     accum_iter: int = 1,
     max_batches: int | None = None,
     train_state: TrainState | None = None,
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
     save_dir: Path | None = None,
 ) -> tuple[float, TrainState]:
-    """
-    Enhanced training/evaluation pipeline with comprehensive monitoring.
-
-    Args:
-        data_iter: Data iterator
-        model: Neural network model
-        loss_compute: Loss computation function
-        optimizer: Optimization algorithm
-        scheduler: Learning rate scheduler
-        mode: Training mode ('train', 'eval', 'train+log')
-        max_batches: Maximum number of batches to process
-        accum_iter: Gradient accumulation steps
-        train_state: Training state tracker
-        device: Computation device
-        save_dir: Directory to save metrics
-
-    Returns:
-        tuple[float, TrainingState]: (average_loss, updated_metrics)
-    """
     train_state = train_state or TrainState(save_dir)
     total_loss = 0
     tokens = 0
 
-    # Set model mode
-    model.train(mode.startswith('train'))
-    torch.set_grad_enabled(mode.startswith('train'))
+    model.train(mode == 'train')
+    torch.set_grad_enabled(mode == 'train')
 
-    progress = create_progress_bar()
     total = min(len(data_iter), max_batches) if max_batches else len(data_iter)
-    try:
-        with progress:
-            task_id = progress.add_task(description=f'Epoch {train_state.epoch}', total=total)
+    # Custom progress bar with adjusted shape and metrics
+    pbar = tqdm(
+        total=total,
+        desc=f'[{mode.upper()}] Epoch {train_state.epoch + 1}',
+        bar_format='{l_bar}{bar:20}{r_bar}',  # Adjusted bar length for distinct shape
+        colour='green',  # Visual customization
+        dynamic_ncols=True,  # Adapts to terminal width
+    )
 
-            for i, batch in enumerate(data_iter):
-                if max_batches and i >= max_batches:
-                    break
+    for i, batch in enumerate(data_iter):
+        if max_batches and i >= max_batches:
+            break
 
-                batch = batch.to(device)
+        batch = batch.to(device)
 
-                # Forward pass based on model architecture
-                if batch.model_type == 'encoder-only':
-                    out = model.forward(batch.src, batch.src_mask)
-                    loss, loss_node = loss_compute(out, batch.labels, batch.ntokens)
-                elif batch.model_type == 'decoder-only':
-                    out = model.forward(tgt=batch.tgt, tgt_mask=batch.tgt_mask)
-                    loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
-                else:
-                    # Standard encoder-decoder
-                    out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
-                    loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+        # Handle different model types
+        if hasattr(batch, 'model_type'):
+            if batch.model_type == 'encoder-only':
+                out = model.forward(batch.src, batch.src_mask)
+                loss, loss_node = loss_compute(out, batch.labels, batch.ntokens)
+            elif batch.model_type == 'decoder-only':
+                out = model.forward(tgt=batch.tgt, tgt_mask=batch.tgt_mask)
+                loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+            else:
+                out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
+                loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+        else:
+            out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
+            loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
 
-                # Training step
-                if mode.startswith('train'):
-                    loss_node.backward()
+        if mode == 'train':
+            loss_node.backward()
+            if (i + 1) % accum_iter == 0:
+                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
+                train_state.accum_step += 1
+                scheduler.step()
 
-                    if (i + 1) % accum_iter == 0:
-                        optimizer.step()
-                        optimizer.zero_grad(set_to_none=True)
-                        train_state.accum_step += 1
-                        scheduler.step()
+        batch_loss = loss / batch.ntokens
+        current_lr = optimizer.param_groups[0]['lr'] if mode == 'train' else 0
 
-                # Update metrics
-                batch_loss = loss / batch.ntokens
-                current_lr = optimizer.param_groups[0]['lr'] if mode.startswith('train') else 0
+        train_state.update(
+            batch_size=batch.src.size(0) if hasattr(batch, 'src') else batch.tgt.size(0),
+            ntokens=batch.ntokens,
+            loss=batch_loss.item(),
+            lr=current_lr,
+        )
 
-                train_state.update(
-                    batch_size=batch.src.size(0) if hasattr(batch, 'src') else batch.tgt.size(0),
-                    ntokens=batch.ntokens,
-                    loss=batch_loss.item(),
-                    lr=current_lr,
-                )
+        total_loss += loss
+        tokens += batch.ntokens
 
-                total_loss += loss
-                tokens += batch.ntokens
+        # Update progress bar with custom metrics
+        pbar.set_postfix(
+            {
+                'Loss': f'{batch_loss:.4f}',
+                'LR': f'{current_lr:.2e}',
+                'Tok/s': f'{train_state.tokens_per_sec:.0f}',
+            }
+        )
+        pbar.update(1)
 
-                # Update progress display
-                progress_desc = f'⚡ {mode.capitalize()} • Loss: {batch_loss:.4f}'
+        del loss, loss_node
 
-                if mode.startswith('train'):
-                    progress_desc += f' • LR: {current_lr:.2e}'
+    pbar.close()
 
-                progress_desc += f' • Speed: {train_state.tokens_per_sec:.0f} tokens/sec'
-                progress.update(task_id, advance=1, description=progress_desc)
-
-                # Cleanup
-                del loss
-                del loss_node
-
-        # Save metrics if directory provided
-        if save_dir and mode.startswith('train'):
-            train_state.save(Path(save_dir))
-
-    except Exception as e:
-        print(f'Error during {mode}: {e!s}')
-        raise
+    if save_dir and mode == 'train':
+        train_state.epoch += 1
+        train_state.save(Path(save_dir))
 
     return total_loss / tokens, train_state
 
@@ -789,6 +771,7 @@ class Trainer:
         src_mask: torch.Tensor | None = None,
         max_len: int = 50,
         start_symbol: int = 0,
+        end_symbol: int | None = None,
     ) -> torch.Tensor:
         """
         Generate predictions using model's decoding strategy.
@@ -805,6 +788,8 @@ class Trainer:
             start_symbol (int): Starting token for sequence generation. Defaults to 0.
             torch.Tensor: Predictions from the model. For encoder-only models, returns class
                 indices. For encoder-decoder models, returns generated sequences.
+            end_symbol (int, optional): End symbol token ID for early stopping.
+                Defaults to None.
         Raises:
             ValueError: If src is not provided for encoder-only models, or if either src or
                 src_mask is not provided for encoder-decoder models."""
@@ -834,10 +819,24 @@ class Trainer:
                         )
                     src = src.to(self.device)
                     src_mask = src_mask.to(self.device)
-                    return greedy_decode(self.model, src, src_mask, max_len, start_symbol)
+                    return greedy_decode(
+                        model=self.model,
+                        src=src,
+                        src_mask=src_mask,
+                        max_len=max_len,
+                        start_symbol=start_symbol,
+                        end_symbol=end_symbol,
+                    )
 
                 case _:
-                    return greedy_decode(self.model, src, src_mask, max_len, start_symbol)
+                    return greedy_decode(
+                        model=self.model,
+                        src=src,
+                        src_mask=src_mask,
+                        max_len=max_len,
+                        start_symbol=start_symbol,
+                        end_symbol=end_symbol,
+                    )
 
     def _get_clean_metrics(self) -> TrainerMetrics:
         """
