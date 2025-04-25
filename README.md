@@ -37,7 +37,7 @@ FlexiTransformers is designed to provide a highly modular and customizable frame
 * **Required Packages:** Ensure you have the following packages installed:
 
   ```bash
-  pip install rich>=13.9.4 torch>=2.0.1
+  pip install rich>=13.9.4 torch>=2.0.1 tqdm>=4.67.1
   ```
 
   These packages are essential for FlexiTransformers to function correctly.
