@@ -1,7 +1,7 @@
 FlexiTransformers Documentation
 ================================
 
-.. image:: _static/logo.png
+.. image:: _static/new_logo.png
    :alt: FlexiTransformers Logo
    :align: center
 
@@ -118,8 +118,8 @@ GPT-Style Model
     C -->|Encoder-Decoder| D[EncoderDecoderArchitectures]
     C -->|Encoder-Only| E[EncoderOnlyArchitectures]
     C -->|Decoder-Only| F[DecoderOnlArchitectures]
-    D -->|Dedicated Class| G[FlexiTransformer]
-    D -->|Generic Class| H[TransformerModel]
+    D -->|Generic Class| G[FlexiTransformer]
+    D -->|Dedicated Class| H[TransformerModel]
     E -->|Dedicated Class| I[FlexiBERT]
     E -->|Generic Class| J[FlexiTransformer]
     F -->|Dedicated Class| K[FlexiGPT]
