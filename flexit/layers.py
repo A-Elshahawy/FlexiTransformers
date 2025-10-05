@@ -84,91 +84,26 @@ class SublayerConnection(nn.Module):
     def __init__(self, size: int, pre_norm: bool, dropout: float) -> None:
         """
         Initialize sublayer connection.
-
-        Args:
-            size (int): Size of input features.
-            pre_norm (bool): Use pre-normalization.
-            dropout (float): Dropout probability.
         """
-        super(SublayerConnection, self).__init__()
-        self.norm = NormalizationBlock(size, dropout)
-        self.pre_norm = pre_norm
-
-    def forward(
-        self, x: torch.Tensor, sublayer: Callable[[torch.Tensor], torch.Tensor]
-    ) -> torch.Tensor:
-        """
-        Apply residual connection to any sublayer with the same size.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            sublayer (Callable): A sublayer function to apply.
-
-        Returns:
-            torch.Tensor: Output tensor after applying the residual connection.
-        """
-        if self.pre_norm:
-            return self.norm.pre_normalization(x, sublayer)
-        return self.norm.post_normalization(x, sublayer)
-
-
-class NormalizationBlock(nn.Module):
-    """
-    Normalization block for pre and post normalization.
-
-    Args:
-        size (int): Size of the input features.
-        dropout (float): Dropout probability.
-
-    Attributes:
-        norm (LayerNorm): Layer normalization.
-        dropout (nn.Dropout): Dropout layer.
-
-    Methods:
-        pre_normalization: Pre-normalization forward pass.
-        post_normalization: Post-normalization forward pass.
-    """
-
-    def __init__(self, size: int, dropout: float) -> None:
-        """
-        Initialize normalization block.
-
-        Args:
-            size (int): Size of input features.
-            dropout (float): Dropout probability.
-        """
-        super(NormalizationBlock, self).__init__()
+        super().__init__()
         self.norm = LayerNorm(size)
         self.dropout = nn.Dropout(dropout)
+        self.pre_norm = pre_norm
 
-    def pre_normalization(
-        self, x: torch.Tensor, sublayer: Callable[[torch.Tensor], torch.Tensor]
-    ) -> torch.Tensor:
-        """
-        Pre-normalization forward pass.
-
+    def forward(self, x: torch.Tensor, sublayer: nn.Module) -> torch.Tensor:
+        """Apply residual connection with normalization.
         Args:
             x (torch.Tensor): Input tensor.
-            sublayer (Callable): Sublayer function.
-
-        Returns:
-            torch.Tensor: Output tensor."""
-        return x + self.dropout(sublayer(self.norm(x)))
-
-    def post_normalization(
-        self, x: torch.Tensor, sublayer: Callable[[torch.Tensor], torch.Tensor]
-    ) -> torch.Tensor:
-        """
-        Post-normalization forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            sublayer (Callable): Sublayer function.
-
+            sublayer (nn.Module): Sublayer to apply.
         Returns:
             torch.Tensor: Output tensor.
         """
-        return self.norm(x + self.dropout(sublayer(x)))
+        if self.pre_norm:
+            # Pre-norm: norm -> sublayer -> dropout -> residual
+            return x + self.dropout(sublayer(self.norm(x)))
+        else:
+            # Post-norm: sublayer -> dropout -> residual -> norm
+            return self.norm(x + self.dropout(sublayer(x)))
 
 
 class PositionwiseFeedForward(nn.Module):
@@ -297,6 +232,10 @@ class EncoderLayer(nn.Module):
         self.size = size
         self.pre_norm = pre_norm
 
+    def _self_attention(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Separate method to avoid lambda serialization issues"""
+        return self.self_attn(x, x, x, mask)
+
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through encoder layer.
@@ -309,7 +248,7 @@ class EncoderLayer(nn.Module):
             torch.Tensor: Output tensor.
         """
 
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
+        x = self.sublayer[0](x, lambda x: self._self_attention(x, mask))
         return self.sublayer[1](x, self.feed_forward)
 
 
@@ -366,6 +305,16 @@ class DecoderLayer(nn.Module):
         self.sublayer = clone(SublayerConnection(size, pre_norm, dropout), n_sublayers)
         self.pre_norm = pre_norm
 
+    def _self_attention(self, x: torch.Tensor, tgt_mask: torch.Tensor) -> torch.Tensor:
+        return self.self_attn(x, x, x, tgt_mask)
+
+    def _src_attention(
+        self, x: torch.Tensor, memory: torch.Tensor, src_mask: torch.Tensor | None
+    ) -> torch.Tensor | None:
+        if self.src_attn is not None:
+            return self.src_attn(x, memory, memory, src_mask)
+        return None
+
     def forward(
         self,
         x: torch.Tensor,
@@ -385,10 +334,11 @@ class DecoderLayer(nn.Module):
         Returns:
             torch.Tensor: Output tensor.
         """
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
+
+        x = self.sublayer[0](x, lambda x: self._self_attention(x, tgt_mask))
 
         if self.src_attn is not None and memory is not None:
-            x = self.sublayer[1](x, lambda x: self.src_attn(x, memory, memory, src_mask))
+            x = self.sublayer[1](x, lambda x: self._src_attention(x, memory, src_mask))
             x = self.sublayer[2](x, self.feed_forward)
         else:
             x = self.sublayer[1](x, self.feed_forward)
@@ -433,4 +383,6 @@ class Embeddings(nn.Module):
         Returns:
             torch.Tensor: Embedded tensor.
         """
+        # return self.lut(x.to(self.lut.weight.device)) * math.sqrt(self.d_model)
+
         return self.lut(x.to(self.lut.weight.device)) * math.sqrt(self.d_model)

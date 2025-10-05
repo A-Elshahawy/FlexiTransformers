@@ -22,6 +22,7 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
+from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -81,7 +82,7 @@ class Batch:
 
         match model_type:
             case 'encoder-decoder':
-                self.__init_decoder_decoder(src, tgt)
+                self.__init_encoder_decoder(src, tgt)
             case 'encoder-only':
                 self.__init_encoder_only(src, labels)
             case 'decoder-only':
@@ -109,26 +110,39 @@ class Batch:
         if model_type == 'encoder-only' and labels is None:
             raise ValueError('Labels required for encoder-only (BERT) models')
 
-    def __init_encoder_only(self, src: torch.Tensor, labels: torch.Tensor) -> None:
+    def __init_encoder_only(self, src: torch.Tensor | None, labels: torch.Tensor | None) -> None:
         """Initialize for encoder-only (BERT-style) models."""
+        if src is None:
+            raise ValueError('Source tensor cannot be None for encoder-only models')
+
         self.src = src
         self.labels = labels
         self.src_mask = (src != self.pad).unsqueeze(-2)
         self.ntokens = (self.src != self.pad).sum()
 
-    def __init_decoder_only(self, sequence: torch.Tensor) -> None:
+    def __init_decoder_only(self, sequence: torch.Tensor | None) -> None:
         """Initialize for decoder-only (GPT Style) models using a single input sequence."""
+        if sequence is None:
+            raise ValueError('Sequence cannot be None for decoder-only models')
+        if sequence.size(1) < 2:
+            raise ValueError(f'Sequence must have at least 2 tokens, got {sequence.size(1)}')
+
         self.tgt = sequence[:, :-1]
         self.tgt_y = sequence[:, 1:]
         self.tgt_mask = self.make_std_mask(self.tgt, self.pad)
         self.ntokens = (self.tgt_y != self.pad).data.sum()
 
-    def __init_decoder_decoder(self, src: torch.Tensor, tgt: torch.Tensor) -> None:
+    def __init_encoder_decoder(self, src: torch.Tensor | None, tgt: torch.Tensor | None) -> None:
         """Initialize for encoder-decoder (Transformer) models."""
+        if src is None:
+            raise ValueError('Source tensor (src) cannot be None for encoder-decoder models')
 
         self.src = src
         self.src_mask = (src != self.pad).unsqueeze(-2)
         if tgt is not None:
+            if tgt.size(1) < 2:
+                raise ValueError(f'Target must have at least 2 tokens, got {tgt.size(1)}')
+
             self.tgt = tgt[:, :-1]
             self.tgt_y = tgt[:, 1:]
             self.tgt_mask = self.make_std_mask(self.tgt, self.pad)
@@ -249,31 +263,35 @@ def run_epoch(
     data_iter: DataLoader,
     model: torch.nn.Module,
     loss_compute: Callable,
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler._LRScheduler,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
     mode: Literal['train', 'eval'] = 'train',
     accum_iter: int = 1,
     max_batches: int | None = None,
     train_state: TrainState | None = None,
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
     save_dir: Path | None = None,
-) -> tuple[float, TrainState]:
+) -> tuple[float, Any]:
+    """Fixed training loop with proper loss scaling and gradient accumulation"""
+
     train_state = train_state or TrainState(save_dir)
     total_loss = 0
-    tokens = 0
+    total_tokens = 0
 
     model.train(mode == 'train')
     torch.set_grad_enabled(mode == 'train')
 
+    if mode == 'train' and optimizer:
+        optimizer.zero_grad(set_to_none=True)
+
     total = min(len(data_iter), max_batches) if max_batches else len(data_iter)
-    # Custom progress bar with adjusted shape and metrics
     pbar = tqdm(
         total=total,
         desc=f'[{mode.upper()}] Epoch {train_state.epoch + 1}',
-        bar_format='{l_bar}{bar:20}{r_bar}',  # Adjusted bar length for distinct shape
-        colour='green',  # Visual customization
-        dynamic_ncols=True,  # Adapts to terminal width
+        bar_format='{l_bar}{bar:20}{r_bar}',
     )
+
+    accumulated_steps = 0  # Track accumulated gradient steps
 
     for i, batch in enumerate(data_iter):
         if max_batches and i >= max_batches:
@@ -281,61 +299,84 @@ def run_epoch(
 
         batch = batch.to(device)
 
-        # Handle different model types
+        # Forward pass based on model type
         if hasattr(batch, 'model_type'):
             if batch.model_type == 'encoder-only':
                 out = model.forward(batch.src, batch.src_mask)
-                loss, loss_node = loss_compute(out, batch.labels, batch.ntokens)
+                # FIX: Use batch size for classification normalization
+                batch_size = batch.src.size(0)
+                loss, loss_for_backward = loss_compute(out, batch.labels, batch_size)
             elif batch.model_type == 'decoder-only':
                 out = model.forward(tgt=batch.tgt, tgt_mask=batch.tgt_mask)
-                loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
-            else:
+                loss, loss_for_backward = loss_compute(out, batch.tgt_y, batch.ntokens)
+            else:  # encoder-decoder
                 out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
-                loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+                loss, loss_for_backward = loss_compute(out, batch.tgt_y, batch.ntokens)
         else:
             out = model.forward(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
-            loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
+            loss, loss_for_backward = loss_compute(out, batch.tgt_y, batch.ntokens)
 
-        if mode == 'train':
-            loss_node.backward()
-            if (i + 1) % accum_iter == 0:
+        if mode == 'train' and optimizer:
+            # Scale loss for gradient accumulation
+            if accum_iter > 1:
+                loss_for_backward = loss_for_backward / accum_iter
+
+            loss_for_backward.backward()
+            accumulated_steps += 1
+
+            # Step optimizer after accumulation or at the end
+            if accumulated_steps % accum_iter == 0:
+                if hasattr(loss_compute, 'grad_clip') and loss_compute.grad_clip > 0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), loss_compute.grad_clip)
+
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
                 train_state.accum_step += 1
-                scheduler.step()
+                accumulated_steps = 0  # Reset counter
 
-        batch_loss = loss / batch.ntokens
-        current_lr = optimizer.param_groups[0]['lr'] if mode == 'train' else 0
+                if scheduler and hasattr(scheduler, 'step_per_batch') and scheduler.step_per_batch:
+                    scheduler.step()
 
-        train_state.update(
-            batch_size=batch.src.size(0) if hasattr(batch, 'src') else batch.tgt.size(0),
-            ntokens=batch.ntokens,
-            loss=batch_loss.item(),
-            lr=current_lr,
-        )
+        # Calculate metrics for logging
+        batch_tokens = batch.ntokens if hasattr(batch, 'ntokens') else batch.src.numel()
+        current_lr = optimizer.param_groups[0]['lr'] if optimizer else 0
 
-        total_loss += loss
-        tokens += batch.ntokens
+        if mode == 'train' and train_state:
+            batch_size = batch.src.size(0) if hasattr(batch, 'src') else batch.tgt.size(0)
+            train_state.update(batch_size, batch_tokens, loss.item(), current_lr)
 
-        # Update progress bar with custom metrics
+        total_loss += loss.item() * batch_tokens
+        total_tokens += batch_tokens
+
         pbar.set_postfix(
             {
-                'Loss': f'{batch_loss:.4f}',
+                'Loss': f'{loss.item():.4f}',
                 'LR': f'{current_lr:.2e}',
-                'Tok/s': f'{train_state.tokens_per_sec:.0f}',
             }
         )
         pbar.update(1)
 
-        del loss, loss_node
+    # FIX: Handle remaining gradients after loop
+    if mode == 'train' and optimizer and accumulated_steps > 0:
+        if hasattr(loss_compute, 'grad_clip') and loss_compute.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), loss_compute.grad_clip)
+
+        optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        train_state.accum_step += 1
 
     pbar.close()
 
-    if save_dir and mode == 'train':
-        train_state.epoch += 1
-        train_state.save(Path(save_dir))
+    # Step scheduler per epoch if not per-batch
+    if (
+        mode == 'train'
+        and scheduler
+        and (not hasattr(scheduler, 'step_per_batch') or not scheduler.step_per_batch)
+    ):
+        scheduler.step()
 
-    return total_loss / tokens, train_state
+    avg_loss = total_loss / total_tokens if total_tokens > 0 else 0
+    return avg_loss, train_state
 
 
 @dataclass
@@ -430,11 +471,17 @@ class DummyOptimizer(torch.optim.Optimizer):
         pass
 
 
-class DummyScheduler:
+class DummyScheduler(_LRScheduler):
     """Dummy scheduler for evaluation mode"""
+
+    def __init__(self, optimizer: DummyOptimizer | None = None) -> None:
+        self.optimizer = optimizer
 
     def step(self) -> None:
         pass
+
+    def get_last_lr(self) -> list[float]:
+        return [0.0]
 
 
 class Trainer:
@@ -512,9 +559,14 @@ class Trainer:
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.fast_dev_run = fast_dev_run
-        self.model_type: Literal['encoder-decoder', 'encoder-only', 'decoder-only'] = (
-            model.config.model_type
-        )
+
+        model_type = getattr(getattr(model, 'config', None), 'model_type', None)
+        if model_type not in ('encoder-decoder', 'encoder-only', 'decoder-only'):
+            raise ValueError(
+                'model_type must be one of: encoder-decoder, encoder-only, decoder-only'
+            )
+
+        self.model_type: Literal['encoder-decoder', 'encoder-only', 'decoder-only'] = model_type
         self.grad_accumulation_steps = grad_accumulation_steps
         self.metrics = TrainerMetrics()
         self.current_epoch = 0
@@ -751,6 +803,8 @@ class Trainer:
         Returns:
             float: The validation loss value computed over the entire validation set.
         """
+        if self.val_dataloader is None:
+            raise ValueError('Validation dataloader is required for evaluation')
 
         self.model.eval()
         val_loss, _ = run_epoch(
@@ -887,8 +941,9 @@ class Trainer:
             f'Epoch: {epoch + 1}',
             f'Train Loss: {train_loss:.4f}',
             f'Val Loss: {val_loss:.4f}' if self.val_dataloader else 'Val Loss: N/A',
-            f'Time: {epoch_time:.2f}s',
             f'LR: {lr:.2e}',
+            f'Tokens: {self.train_state.tokens}',
+            f'Time: {epoch_time:.2f}s',
         ]
         panel = Panel('\t'.join(summary), title='Epoch Summary', border_style='blue')
         self.console.print(panel)

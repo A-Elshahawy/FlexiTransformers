@@ -164,7 +164,7 @@ class BaseTransformer(Generic[T], nn.Module):
         """
 
         if hasattr(self._base_model, 'encode'):
-            return self._base_model.encode(*args, **kwargs)
+            return self._base_model.encode(*args, **kwargs)  # type: ignore
         raise AttributeError(f"'{self.__class__.__name__}' has no encode method")
 
     def decode(self, *args: Any, **kwargs: Any) -> torch.Tensor:
@@ -185,7 +185,7 @@ class BaseTransformer(Generic[T], nn.Module):
         """
 
         if hasattr(self._base_model, 'decode'):
-            return self._base_model.decode(*args, **kwargs)
+            return self._base_model.decode(*args, **kwargs)  # type: ignore
         raise AttributeError(f"'{self.__class__.__name__}' has no decode method")
 
     def forward(self, *args: Any, **kwargs: Any) -> torch.Tensor:
@@ -542,8 +542,9 @@ class FlexiBERT(BaseTransformer):
             ...     )
             ... )
         """
+        self._base_model.generator = new_head
 
-        self.model.head = new_head
+        self.generator = new_head
 
 
 class FlexiGPT(BaseTransformer):

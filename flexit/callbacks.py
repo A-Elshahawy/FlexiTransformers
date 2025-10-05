@@ -5,6 +5,7 @@ This module implements callback classes for training events,
 including checkpointing and early stopping.
 """
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -129,7 +130,7 @@ class CheckpointCallback(Callback):
             return
 
         current_loss = trainer.metrics.val_losses[-1]
-        epoch_num = trainer.current_epoch  # Use the trainer's current epoch counter
+        epoch_num = trainer.current_epoch
 
         # Save best model
         if self.save_best and current_loss < self.best_loss:
@@ -189,10 +190,10 @@ class CheckpointCallback(Callback):
         Raises:
             ValueError: If epoch number cannot be extracted.
         """
-        try:
-            return int(path.stem.split('_')[-1])
-        except ValueError:
-            return 0  # Handle best model filename
+        match = re.search(r'epoch_(\d+)', path.name)
+        if match:
+            return int(match.group(1))
+        return 0
 
 
 class EarlyStoppingCallback(Callback):
@@ -237,6 +238,9 @@ class EarlyStoppingCallback(Callback):
         Returns:
             None
         """
+        if not trainer.metrics.val_losses:
+            return
+
         current_loss = trainer.metrics.val_losses[-1]
 
         if current_loss < (self.best_loss - self.min_delta):

@@ -91,6 +91,11 @@ class EncoderDecoderStrategy(DecoderStrategy):
 
             # Get most probable token for each sample in batch
             _, next_word = torch.max(logits, dim=1)
+
+            # Ensure generated tokens are within valid vocabulary range
+            vocab_size = logits.size(-1)
+            next_word = torch.clamp(next_word, 0, vocab_size - 1)
+
             next_word = next_word.unsqueeze(1)
 
             # Append new tokens
@@ -145,36 +150,48 @@ class DecoderOnlyStrategy(DecoderStrategy):
         # Initialize sequence
         if src is None:
             batch_size = 1
-            ys = torch.full((batch_size, 1), start_symbol, device=device).type_as(
-                next(model.parameters())
-            )
+            ys = torch.full((batch_size, 1), start_symbol, device=device, dtype=torch.long)
         else:
             batch_size = src.size(0)
             ys = src.clone().to(device)
 
-        # Track which sequences have completed
         completed = torch.zeros(batch_size, dtype=torch.bool, device=device)
+        model.eval()
 
-        for _ in range(max_len - 1):
-            # Create causal mask for autoregressive generation
-            tgt_mask = subsequent_mask(ys.size(1)).type_as(ys).to(device)
+        with torch.no_grad():
+            for _ in range(max_len - 1):
+                current_len = ys.size(1)
+                tgt_mask = subsequent_mask(current_len).to(device)
 
-            # Forward pass through the model
-            out = model(ys, tgt_mask)
-            logits = model.generator(out[:, -1])
+                # Ensure proper mask dimensions
+                if tgt_mask.dim() == 2:
+                    tgt_mask = tgt_mask.unsqueeze(0).expand(batch_size, -1, -1)
 
-            # Select next token
-            _, next_word = torch.max(logits, dim=1)
-            next_word = next_word.unsqueeze(1)
+                # FIX: Use keyword arguments for proper model interface
+                try:
+                    out = model(tgt=ys, tgt_mask=tgt_mask)
+                except (RuntimeError, TypeError):
+                    # Fallback to positional arguments if keyword fails
+                    out = model(ys, tgt_mask)
 
-            # Append to sequences
-            ys = torch.cat([ys, next_word], dim=1)
+                # Apply generator to get vocab-sized logits before argmax
+                last_hidden = out[:, -1, :] if out.dim() == 3 else out
+                logits = (
+                    model.generator(last_hidden) if hasattr(model, 'generator') else last_hidden
+                )
+                _, next_word = torch.max(logits, dim=1)
 
-            # Check for early stopping
-            if end_symbol is not None:
-                completed = completed | (next_word.squeeze(1) == end_symbol)
-                if completed.all():
-                    break
+                # Ensure generated tokens are within valid vocabulary range
+                vocab_size = logits.size(-1)
+                next_word = torch.clamp(next_word, 0, vocab_size - 1)
+
+                next_word = next_word.unsqueeze(1)
+                ys = torch.cat([ys, next_word], dim=1)
+
+                if end_symbol is not None:
+                    completed = completed | (next_word.squeeze(1) == end_symbol)
+                    if completed.all():
+                        break
 
         return ys
 
