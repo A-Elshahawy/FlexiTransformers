@@ -37,7 +37,7 @@ class AbstractAttention(ABC, nn.Module):
     """
 
     def __init__(
-        self, n_heads: int, d_model: int, dropout: float = 0.1, mask_eps: float = -1e9
+        self, n_heads: int, d_model: int, dropout: float = 0.1, mask_eps: float = -float('inf')
     ) -> None:
         """
         Initialize the attention mechanism.
@@ -177,7 +177,7 @@ class AbsoluteMultiHeadedAttention(AbstractAttention):
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -self.mask_eps)
+            scores = scores.masked_fill(mask == 0, self.mask_eps)
         p_attn = scores.softmax(dim=-1)
         if dropout is not None:
             p_attn = dropout(p_attn)
@@ -243,8 +243,7 @@ class RotaryMultiHeadAttention(AbstractAttention):
 
         d_rope = int(rope_percentage * self.d_k)
 
-        self.query_rotary_pe = RotaryPositionalEncoding(d_rope)
-        self.key_rotary_pe = RotaryPositionalEncoding(d_rope)
+        self.rotary_pe = RotaryPositionalEncoding(d_rope)
 
     def attention(
         self,
@@ -252,7 +251,7 @@ class RotaryMultiHeadAttention(AbstractAttention):
         key: torch.Tensor,
         value: torch.Tensor,
         mask: torch.Tensor | None = None,
-        dropout: torch.Tensor | None = None,
+        dropout: nn.Dropout | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute attention with rotary positional encoding.
@@ -270,12 +269,12 @@ class RotaryMultiHeadAttention(AbstractAttention):
 
         # * Apply Rotation onto Q & K
         d_k = query.size(-1)
-        query = self.query_rotary_pe(query)
-        key = self.key_rotary_pe(key)
+        query = self.rotary_pe(query)
+        key = self.rotary_pe(key)
 
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -self.mask_eps)
+            scores = scores.masked_fill(mask == 0, self.mask_eps)
         p_attn = scores.softmax(dim=-1)
         if dropout is not None:
             p_attn = dropout(p_attn)
@@ -357,17 +356,40 @@ class ALiBiMultiHeadAttention(AbstractAttention):
         """
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.d_k)
         tgt_len, src_len = scores.size(-2), scores.size(-1)
+
+        # Generate ALiBi bias for exact dimensions needed
         alibi_bias = self.pe(max(tgt_len, src_len), scores.device)
 
-        # Slice to match exact dimensions and expand batch
-        alibi_bias = alibi_bias[:, :tgt_len, :src_len].unsqueeze(0)
-        alibi_bias = alibi_bias.expand(scores.size(0), -1, -1, -1)
+        # Validate dimensions before slicing
+        bias_heads, bias_tgt, bias_src = alibi_bias.shape
+
+        if bias_heads != self.n_heads:
+            raise ValueError(
+                f"ALiBi bias head count {bias_heads} doesn't match n_heads {self.n_heads}"
+            )
+
+        if bias_tgt < tgt_len or bias_src < src_len:
+            raise ValueError(
+                f'ALiBi bias dimensions ({bias_tgt}, {bias_src}) insufficient for '
+                f'attention dimensions ({tgt_len}, {src_len}). Consider increasing max_len.'
+            )
+
+        # Slice to exact dimensions needed
+        alibi_bias = alibi_bias[:, :tgt_len, :src_len]
+
+        # Add batch dimension and expand
+        alibi_bias = alibi_bias.unsqueeze(0).expand(scores.size(0), -1, -1, -1)
+
+        scores = scores + alibi_bias
 
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -self.mask_eps)
+            scores = scores.masked_fill(mask == 0, self.mask_eps)
+
         p_attn = scores.softmax(dim=-1)
+
         if dropout is not None:
             p_attn = dropout(p_attn)
+
         return torch.matmul(p_attn, value), p_attn
 
     def forward(
@@ -420,6 +442,8 @@ class RelativeGlobalAttention(AbstractAttention):
         forward: Implements forward pass using parent class.
     """
 
+    position_cache: torch.Tensor
+
     def __init__(
         self,
         n_heads: int,
@@ -446,7 +470,7 @@ class RelativeGlobalAttention(AbstractAttention):
         nn.init.normal_(self.Er, mean=0, std=0.02)
 
         # Cache for position indices
-        self.register_buffer('position_cache', None)
+        self.register_buffer('position_cache', torch.zeros(0, dtype=torch.long))
         self._last_seq_lens: tuple[int, int] = (0, 0)
 
     def _get_relative_positions(self, q_len: int, k_len: int, device: torch.device) -> torch.Tensor:
@@ -462,19 +486,26 @@ class RelativeGlobalAttention(AbstractAttention):
             torch.Tensor: Relative position indices.
         """
 
-        if self._last_seq_lens != (q_len, k_len):
+        if self._last_seq_lens != (q_len, k_len) or self.position_cache.device != device:
+            # Compute relative position indices
             positions = (
                 torch.arange(q_len, device=device)[:, None]
                 - torch.arange(k_len, device=device)[None, :]
             )
             positions = positions.clamp(-self.max_len + 1, self.max_len - 1)
-            self.position_cache = positions + self.max_len - 1
+            self.position_cache = (positions + self.max_len - 1).to(device)
             self._last_seq_lens = (q_len, k_len)
 
-        return self.position_cache
+        return self.position_cache.to(device)
 
     def _chunked_attention(
-        self, query: torch.Tensor, key: torch.Tensor, value: torch.Tensor, positions: torch.Tensor
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        positions: torch.Tensor,
+        mask: torch.Tensor | None,
+        dropout: nn.Dropout | None,
     ) -> torch.Tensor:
         """
         Compute attention in chunks for memory efficiency.
@@ -504,7 +535,17 @@ class RelativeGlobalAttention(AbstractAttention):
             QK_t = torch.matmul(q_chunk, key.transpose(-2, -1))
 
             chunk_scores = (QK_t + QEr) / math.sqrt(self.d_k)
-            chunk_output = torch.matmul(chunk_scores.softmax(dim=-1), value)
+            if mask is not None:
+                chunk_scores = chunk_scores.masked_fill(
+                    mask[:, :, chunk_start:chunk_end, :] == 0, self.mask_eps
+                )
+
+            p_attn_chunk = chunk_scores.softmax(dim=-1)
+
+            if dropout is not None:
+                p_attn_chunk = dropout(p_attn_chunk)
+
+            chunk_output = torch.matmul(p_attn_chunk, value)
             outputs.append(chunk_output)
 
         return torch.cat(outputs, dim=2)
@@ -535,7 +576,7 @@ class RelativeGlobalAttention(AbstractAttention):
         positions = self._get_relative_positions(q_len, k_len, query.device)
 
         if q_len > self.chunk_size:
-            output = self._chunked_attention(query, key, value, positions)
+            output = self._chunked_attention(query, key, value, positions, mask, dropout)
             # Approximate attention weights for visualization
             scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.d_k)
             p_attn = scores.softmax(dim=-1)
@@ -546,7 +587,7 @@ class RelativeGlobalAttention(AbstractAttention):
 
             scores = (QK_t + QEr) / math.sqrt(self.d_k)
             if mask is not None:
-                scores = scores.masked_fill(mask == 0, float('-inf'))
+                scores = scores.masked_fill(mask == 0, self.mask_eps)
 
             p_attn = scores.softmax(dim=-1)
             if dropout is not None:

@@ -61,6 +61,9 @@ class LabelSmoothing(nn.Module):
             torch.Tensor: Loss value.
         """
         assert x.size(1) == self.size
+
+        x = torch.nn.functional.log_softmax(x, dim=-1)
+
         true_dist = x.data.clone()
         true_dist.fill_(self.smoothing / (self.size - 2))
         true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
@@ -82,17 +85,21 @@ class LossCompute:
         grad_clip (float, optional): Maximum norm for gradient clipping
     """
 
-    def __init__(self, generator: nn.Module, criterion: Callable, grad_clip: float = 1.0) -> None:
+    def __init__(
+        self, generator: nn.Module, criterion: Callable, model: nn.Module, grad_clip: float = 1.0
+    ) -> None:
         """
         Initialize loss computation.
 
         Args:
             generator (nn.Module): Model's output generator.
             criterion: Loss criterion.
+            model: Model to compute loss for.
             grad_clip (float): Maximum norm for gradient clipping.
         """
         self.generator = generator
         self.criterion = criterion
+        self.model = model
         self.grad_clip = grad_clip
 
     def __call__(
@@ -107,22 +114,22 @@ class LossCompute:
             norm (float): Batch normalization factor
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: (scaled_loss, raw_loss)
+            tuple[torch.Tensor, torch.Tensor]: (loss_for_display, loss_for_backward)
         """
-        # Generate logits
+        # Apply generator to get logits
         logits = self.generator(x)
 
-        # Reshape tensors for loss computation
+        # Reshape for loss computation
         flat_logits = logits.contiguous().view(-1, logits.size(-1))
         flat_targets = y.contiguous().view(-1)
 
         # Compute raw loss
         raw_loss = self.criterion(flat_logits, flat_targets)
 
-        # Scale loss by normalization factor
-        scaled_loss = raw_loss / norm
+        # Normalize by the number of tokens for proper averaging
+        normalized_loss = raw_loss / norm if norm > 0 else raw_loss
 
-        return scaled_loss * norm, raw_loss
+        return normalized_loss, normalized_loss
 
 
 class BertLoss:
@@ -147,15 +154,16 @@ class BertLoss:
         Args:
             logits: Model output [batch_size, seq_len, num_classes]
             labels: Ground truth [batch_size]
-            norm: Normalization factor
+            norm: Normalization factor (ignored for classification tasks)
 
         Returns:
-            tuple[torch.Tensor, torch.Tensor]: (scaled_loss, raw_loss)
+            tuple[torch.Tensor, torch.Tensor]: (loss_for_display, loss_for_backward)
         """
-
+        if logits.dim() == 3:
+            # Take the first token (CLS token) for classification
+            logits = logits[:, 0, :]
         raw_loss = self.criterion(logits, labels)
 
-        # Scale loss appropriately
-        scaled_loss = raw_loss * norm
-
-        return scaled_loss, raw_loss
+        # For classification tasks, we don't need token-level normalization
+        # Return the same loss for both display and backward pass
+        return raw_loss, raw_loss

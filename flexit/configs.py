@@ -22,7 +22,7 @@ class ModelConfig:
         n_heads: Number of attention heads. Default is 8.
         dropout: Dropout probability. Default is 0.1.
         n_layers: Number of layers. Default is 6.
-        mask_eps: Mask epsilon value for attention. Default is 1e-9.
+        mask_eps: Mask epsilon value for attention. Default is float('-inf').
         model_type: Model type. Options are:
             - 'encoder-decoder'
             - 'encoder-only'
@@ -77,6 +77,7 @@ class ModelConfig:
     d_model: int = 512
     d_ff: int = 2048
     n_heads: int = 8
+    mask_eps: float = float('-inf')
     dropout: float = 0.1
     n_layers: tuple[int, int] | int = 6
     model_type: Literal['encoder-decoder', 'encoder-only', 'decoder-only'] = 'encoder-decoder'
@@ -95,6 +96,18 @@ class ModelConfig:
         'zero',
         'one',
     ] = 'xavier_uniform'
+
+    def __post_init__(self) -> None:
+        """Validate model configuration after initialization."""
+        # Check for model_type specific requirements
+        if self.model_type == 'encoder-decoder':
+            if self.src_vocab is None or self.tgt_vocab is None:
+                raise ValueError('src_vocab and tgt_vocab are required for encoder-decoder models')
+        elif self.model_type == 'encoder-only':
+            if self.src_vocab is None:
+                raise ValueError('src_vocab is required for encoder-only models')
+        elif self.model_type == 'decoder-only' and self.tgt_vocab is None:
+            raise ValueError('tgt_vocab is required for decoder-only models')
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> 'ModelConfig':

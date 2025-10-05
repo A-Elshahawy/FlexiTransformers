@@ -7,8 +7,6 @@ including encoder, decoder, generator, and the encoder-decoder architecture.
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from typing_extensions import Self
 
 from .layers import LayerNorm
 from .utils import clone
@@ -61,6 +59,13 @@ class EncoderDecoder(nn.Module):
             device (str): Device for computation.
         """
         super(EncoderDecoder, self).__init__()
+
+        if hasattr(encoder, 'size') and hasattr(decoder, 'size'):
+            enc_dim = encoder.size
+            dec_dim = decoder.size
+            if enc_dim != dec_dim:
+                raise ValueError(f'Encoder output dim {enc_dim} != Decoder input dim {dec_dim}')
+
         self.encoder = encoder
         self.decoder = decoder
         self.src_embed = src_embed
@@ -68,18 +73,21 @@ class EncoderDecoder(nn.Module):
         self.generator = generator
         self.device = device
 
-    def to(self, device: str) -> Self:
-        """
-        Move model to specified device.
-
+    def to(self, device: torch.device | str) -> 'EncoderDecoder':
+        """Move model to specified device using PyTorch's built-in method.
         Args:
-            device (str): Target device.
-
-        Returns:
-            self: Module instance.
+            device (torch.device | str): Target device.
+        Return:
+            self: EncoderDecoder instance.
         """
+
+        if isinstance(device, str):
+            device = torch.device(device)
+
         super().to(device)
-        self.device = device
+
+        self.device = str(device)
+
         return self
 
     def forward(
@@ -97,7 +105,8 @@ class EncoderDecoder(nn.Module):
         Returns:
             torch.Tensor: Output tensor.
         """
-        return self.decode(self.encode(src, src_mask), src_mask, tgt, tgt_mask)
+        hidden_state = self.decode(self.encode(src, src_mask), src_mask, tgt, tgt_mask)
+        return hidden_state
 
     def encode(self, src: torch.Tensor, src_mask: torch.Tensor) -> torch.Tensor:
         """
@@ -160,8 +169,9 @@ class Generator(nn.Module):
             d_model (int): Model dimension.
             vocab (int): Vocabulary size.
         """
-        super(Generator, self).__init__()
+        super().__init__()
         self.proj = nn.Linear(d_model, vocab)
+        self.d_model = d_model
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -173,7 +183,11 @@ class Generator(nn.Module):
         Returns:
             torch.Tensor: Output tensor after applying linear projection and softmax.
         """
-        return F.log_softmax(self.proj(x), dim=-1)
+        if x.size(-1) != self.d_model:
+            raise ValueError(f'Expected input dim {self.d_model}, got {x.size(-1)}')
+
+        logits = self.proj(x)
+        return logits
 
 
 class Encoder(nn.Module):
@@ -273,6 +287,8 @@ class Decoder(nn.Module):
         Returns:
             torch.Tensor: Decoder output.
         """
+        if memory is not None and src_mask is None:
+            raise ValueError('src_mask required when memory is provided')
 
         if memory is not None:
             return self.forward_cross_attention(x, memory, src_mask, tgt_mask)
@@ -282,7 +298,7 @@ class Decoder(nn.Module):
         self,
         x: torch.Tensor,
         memory: torch.Tensor,
-        src_mask: torch.Tensor,
+        src_mask: torch.Tensor | None,
         tgt_mask: torch.Tensor,
     ) -> torch.Tensor:
         """

@@ -5,6 +5,7 @@ This module implements a factory class for creating different types of transform
 based on configuration parameters.
 """
 
+from collections.abc import Callable
 from copy import deepcopy
 
 import torch
@@ -27,11 +28,8 @@ class TransformerFactory:
     """
     Factory class for creating transformer models.
 
-    Args:
-        config (ModelConfig): Model configuration.
-
-    Methods:
-        create_model: Create transformer model based on configuration.
+    This factory creates different transformer architectures based on configuration.
+    Supported architectures: encoder-decoder, encoder-only, decoder-only
     """
 
     def __init__(self, config: ModelConfig) -> None:
@@ -39,153 +37,213 @@ class TransformerFactory:
         Initialize transformer factory.
 
         Args:
-            config (ModelConfig): Model configuration.
+            config (ModelConfig): Model configuration containing all parameters.
         """
-
         self.config = config
         self._validate_config()
 
-    def _validate_config(self) -> None:
-        """
-        Validates the model configuration.
+        # Register model creation methods
+        self._model_creators: dict[str, Callable[[], nn.Module]] = {
+            'encoder-decoder': self._create_encoder_decoder,
+            'encoder-only': self._create_encoder_only,
+            'decoder-only': self._create_decoder_only,
+        }
 
-        Raises:
-            ValueError: If configuration is invalid.
-        """
+    def _validate_config(self) -> None:
+        """Validates the model configuration."""
+        validators = [self._validate_basic_params, self._validate_model_type_params]
+
+        for validator in validators:
+            validator()
+
+    def _validate_basic_params(self) -> None:
+        """Validate basic model parameters."""
         c = self.config
-        # Basic validations
+
         if c.d_model <= 0 or c.d_model % c.n_heads != 0:
             raise ValueError(
-                f'Invalid d_model ({c.d_model}): must be positive \
-                    and a multiple of n_heads ({c.n_heads}).'
+                f'Invalid d_model ({c.d_model}): must be positive '
+                f'and a multiple of n_heads ({c.n_heads}).'
             )
         if c.d_ff <= 0:
             raise ValueError(f'Invalid d_ff: {c.d_ff} (must be positive).')
         if not (0 <= c.dropout <= 1):
             raise ValueError(f'Invalid dropout: {c.dropout} (must be between 0 and 1).')
 
-        # Model type validations
-        model_validations = {
+    def _validate_model_type_params(self) -> None:
+        """Validate model-type specific parameters."""
+        c = self.config
+
+        validations = {
             'encoder-decoder': {
                 'conditions': [c.src_vocab is not None, c.tgt_vocab is not None],
-                'message': 'src_vocab and tgt_vocab are required for encoder-decoder',
+                'message': 'src_vocab and tgt_vocab are required for encoder-decoder models',
             },
             'encoder-only': {
                 'conditions': [c.src_vocab is not None],
-                'message': 'src_vocab is required for encoder-only',
+                'message': 'src_vocab is required for encoder-only models',
             },
             'decoder-only': {
                 'conditions': [c.tgt_vocab is not None],
-                'message': 'tgt_vocab is required for decoder-only',
+                'message': 'tgt_vocab is required for decoder-only models',
             },
         }
-        if c.model_type not in model_validations:
+
+        if c.model_type not in validations:
             raise ValueError(f'Unsupported model_type: {c.model_type}')
 
-        validation = model_validations[c.model_type]
+        validation = validations[c.model_type]
         if not all(validation['conditions']):
             raise ValueError(validation['message'])
 
     def _init_weights(self, model: nn.Module) -> None:
-        """
-        Initialize model weights.
+        """Initialize model weights with proper scaling."""
+        method = self.config.init_method or 'xavier_uniform'
+        gain = 1.0
 
-        Args:
-            model (nn.Module): Model to initialize.
-        """
-        for p in model.parameters():
-            if p.dim() > 1:
-                init_fn = getattr(nn.init, f'{self.config.init_method}_')
-                init_fn(p)
+        def init_func(module: nn.Module) -> None:
+            if isinstance(module, nn.Linear):
+                self._init_linear_layer(module, method, gain)
+            elif isinstance(module, nn.Embedding):
+                nn.init.normal_(module.weight, mean=0, std=0.02)
+            elif isinstance(module, nn.LayerNorm | nn.BatchNorm1d | nn.BatchNorm2d):
+                if module.weight is not None:
+                    nn.init.ones_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
 
-    def _get_attention_mechanism(self) -> tuple[nn.Module | None, nn.Module | None]:
+        model.apply(init_func)
+
+    def _init_linear_layer(self, module: nn.Linear, method: str, gain: float) -> None:
+        """Initialize linear layer with specified method."""
+        init_methods = {
+            'xavier_uniform': lambda: nn.init.xavier_uniform_(module.weight, gain=gain),
+            'xavier_normal': lambda: nn.init.xavier_normal_(module.weight, gain=gain),
+            'kaiming_uniform': lambda: nn.init.kaiming_uniform_(module.weight, nonlinearity='relu'),
+            'kaiming_normal': lambda: nn.init.kaiming_normal_(module.weight, nonlinearity='relu'),
+            'orthogonal': lambda: nn.init.orthogonal_(module.weight, gain=int(gain)),
+            'zero': lambda: nn.init.zeros_(module.weight),
+            'one': lambda: nn.init.ones_(module.weight),
+        }
+
+        if method in init_methods:
+            init_methods[method]()
+        else:
+            raise ValueError(f'Unknown initialization method: {method}')
+
+        if module.bias is not None:
+            nn.init.zeros_(module.bias)
+
+    def _get_attention_mechanism(self) -> tuple[nn.Module, nn.Module | None]:
         """
         Get attention mechanism based on configuration.
 
         Returns:
-            tuple[nn.Module | None, nn.Module | None]: Attention mechanism and positional encoding.
+            Tuple of (attention_module, positional_encoding_module)
         """
         c = self.config
         mechanisms = {
-            'absolute': (
-                AbsoluteMultiHeadedAttention(c.n_heads, c.d_model, dropout=c.dropout),
-                AbsolutePositionalEncoding(c.d_model, c.dropout),
-            ),
-            'alibi': (
-                ALiBiMultiHeadAttention(c.n_heads, c.d_model, dropout=c.dropout),
-                None,
-            ),
-            'relative': (
-                RelativeGlobalAttention(c.n_heads, c.d_model, dropout=c.dropout),
-                None,
-            ),
-            'rotary': (
-                RotaryMultiHeadAttention(c.n_heads, c.d_model, dropout=c.dropout),
-                None,
-            ),
+            'absolute': self._create_absolute_attention,
+            'alibi': self._create_alibi_attention,
+            'relative': self._create_relative_attention,
+            'rotary': self._create_rotary_attention,
         }
+
         if c.pe_type not in mechanisms:
             raise ValueError(f'Unknown positional encoding type: {c.pe_type}')
-        return mechanisms[c.pe_type]
 
-    def _get_embedding(self, vocab_size: int | None) -> nn.Module:
+        return mechanisms[c.pe_type]()
+
+    def _create_absolute_attention(self) -> tuple[nn.Module, nn.Module]:
+        attention = AbsoluteMultiHeadedAttention(
+            self.config.n_heads, self.config.d_model, dropout=self.config.dropout
+        )
+        position = AbsolutePositionalEncoding(self.config.d_model, self.config.dropout)
+        return attention, position
+
+    def _create_alibi_attention(self) -> tuple[nn.Module, None]:
+        attention = ALiBiMultiHeadAttention(
+            self.config.n_heads, self.config.d_model, dropout=self.config.dropout
+        )
+        return attention, None
+
+    def _create_relative_attention(self) -> tuple[nn.Module, None]:
+        attention = RelativeGlobalAttention(
+            self.config.n_heads, self.config.d_model, dropout=self.config.dropout
+        )
+        return attention, None
+
+    def _create_rotary_attention(self) -> tuple[nn.Module, None]:
+        attention = RotaryMultiHeadAttention(
+            self.config.n_heads, self.config.d_model, dropout=self.config.dropout
+        )
+        return attention, None
+
+    def _get_embedding(self, vocab_size: int) -> nn.Module:
         """
-        Get embedding layer based on vocabulary size.
+        Get embedding layer with optional positional encoding.
 
         Args:
-            vocab_size (int | None): Vocabulary size.
+            vocab_size: Vocabulary size for embedding layer.
 
         Returns:
-            nn.Module: Embedding layer.
-
-        Raises:
-            ValueError: If vocabulary size is None.
+            Embedding module (with positional encoding if applicable).
         """
-        # Get positional encoding if available
         if vocab_size is None:
             raise ValueError('Vocabulary size cannot be None')
 
+        embed = Embeddings(self.config.d_model, vocab_size)
         _, position = self._get_attention_mechanism()
+
         if position:
-            embed = nn.Sequential(Embeddings(self.config.d_model, vocab_size))
-        else:
-            embed = nn.Sequential(Embeddings(self.config.d_model, vocab_size), nn.Identity())
+            return nn.Sequential(embed, position)
         return embed
 
-    def __create_encoder_decoder(self) -> nn.Module:
-        """
-        Create encoder-decoder model.
+    def _get_feed_forward(self) -> PositionwiseFeedForward:
+        """Create feed-forward network."""
+        return PositionwiseFeedForward(
+            self.config.d_model,
+            self.config.d_ff,
+            self.config.dropout,
+            activation=self.config.ff_activation,
+        )
 
-        Returns:
-            nn.Module: Encoder-decoder model.
-        """
+    def _get_layer_counts(self) -> tuple[int, int]:
+        """Get encoder and decoder layer counts."""
+        n_layers = self.config.n_layers
+        if isinstance(n_layers, int):
+            return n_layers, n_layers
+        elif isinstance(n_layers, tuple | list) and len(n_layers) == 2:
+            return int(n_layers[0]), int(n_layers[1])
+        else:
+            raise ValueError(f'n_layers must be int or 2-tuple, got {type(n_layers)}: {n_layers}')
+
+    def _create_encoder_decoder(self) -> nn.Module:
+        """Create encoder-decoder transformer model."""
         c = self.config
         copy = deepcopy
-        attention, _ = self._get_attention_mechanism()
 
-        if c.src_vocab is None:
-            raise ValueError('src_vocab must be defined for encoder-decoder models.')
-        if c.tgt_vocab is None:
-            raise ValueError('tgt_vocab must be defined for encoder-decoder models.')
+        if c.src_vocab is None or c.tgt_vocab is None:
+            raise ValueError('src_vocab and tgt_vocab must be defined for encoder-decoder models')
+        # Get components
+        attention, _ = self._get_attention_mechanism()
+        if attention is None:
+            raise ValueError('Attention mechanism cannot be None')
 
         src_embed = self._get_embedding(c.src_vocab)
         tgt_embed = self._get_embedding(c.tgt_vocab)
-
-        ff = PositionwiseFeedForward(c.d_model, c.d_ff, c.dropout, activation=c.ff_activation)
-
-        if c.tgt_vocab is None:
-            raise ValueError('tgt_vocab must be defined for encoder-decoder models.')
-
+        ff = self._get_feed_forward()
         generator = Generator(c.d_model, c.tgt_vocab)
 
-        # Determine layer counts for encoder and decoder.
-        n_enc = c.n_layers[0] if isinstance(c.n_layers, tuple) else c.n_layers
-        n_dec = c.n_layers[1] if isinstance(c.n_layers, tuple) else c.n_layers
+        # Get layer counts
+        n_enc, n_dec = self._get_layer_counts()
 
+        # Create encoder
         encoder = Encoder(
             EncoderLayer(c.d_model, copy(attention), copy(ff), c.pre_norm, c.dropout), n_enc
         )
 
+        # Create decoder
         decoder = Decoder(
             DecoderLayer(
                 c.d_model,
@@ -197,82 +255,78 @@ class TransformerFactory:
             ),
             n_dec,
         )
+
+        # Build model
         model = EncoderDecoder(encoder, decoder, src_embed, tgt_embed, generator)
         self._init_weights(model)
         return model
 
-    def __create_encoder_only(self) -> nn.Module:
-        """
-        Create encoder-only model.
-
-        Returns:
-            nn.Module: Encoder-only model.
-        """
+    def _create_encoder_only(self) -> nn.Module:
+        """Create encoder-only transformer model."""
         c = self.config
         copy = deepcopy
-        attn, _ = self._get_attention_mechanism()
-        embed = self._get_embedding(c.src_vocab)
-
-        n_layers = c.n_layers if isinstance(c.n_layers, int) else c.n_layers[0]
-        encoder = Encoder(
-            EncoderLayer(
-                c.d_model,
-                copy(attn),
-                copy(
-                    PositionwiseFeedForward(
-                        c.d_model, c.d_ff, c.dropout, activation=c.ff_activation
-                    )
-                ),
-                c.pre_norm,
-                c.dropout,
-            ),
-            n_layers,
-        )
 
         if c.src_vocab is None:
-            raise ValueError('src_vocab must be defined for encoder-only models.')
-        if c.num_classes is None:
-            raise ValueError("""num_classes must be defined for classification tasks
-                                    in encoder-only models.""")
+            raise ValueError('src_vocab must be defined for encoder-only models')
+        # Get components
+        attention, _ = self._get_attention_mechanism()
+        embed = self._get_embedding(c.src_vocab)
+        ff = self._get_feed_forward()
 
+        if attention is None:
+            raise ValueError('Attention mechanism cannot be None')
+        if c.src_vocab is None:
+            raise ValueError('src_vocab must be defined for encoder-only models')
+        if c.num_classes is None:
+            raise ValueError('num_classes must be defined for encoder-only models')
+
+        # Create encoder
+        n_enc, _ = self._get_layer_counts()
+        encoder = Encoder(
+            EncoderLayer(c.d_model, copy(attention), copy(ff), c.pre_norm, c.dropout), n_enc
+        )
+
+        # Create classification head
         bert_head = BertHead(c.d_model, c.num_classes, c.pre_norm, c.dropout, c.ff_activation)
+
+        # Build model
         model = EncoderOnly(embed, encoder, bert_head, c)
         self._init_weights(model)
         return model
 
-    def __create_decoder_only(self) -> nn.Module:
-        """
-        Create decoder-only model.
-
-        Returns:
-            nn.Module: Decoder-only model.
-        """
+    def _create_decoder_only(self) -> nn.Module:
+        """Create decoder-only transformer model."""
         c = self.config
         copy = deepcopy
-        attn, _ = self._get_attention_mechanism()
-        embed = self._get_embedding(c.tgt_vocab)
 
-        n_layers = c.n_layers if isinstance(c.n_layers, int) else c.n_layers[1]
+        if c.tgt_vocab is None:
+            raise ValueError('tgt_vocab must be defined for decoder-only models')
+        # Get components
+        attention, _ = self._get_attention_mechanism()
+        embed = self._get_embedding(c.tgt_vocab)
+        ff = self._get_feed_forward()
+        generator = Generator(c.d_model, c.tgt_vocab)
+
+        if attention is None:
+            raise ValueError('Attention mechanism cannot be None')
+        if c.tgt_vocab is None:
+            raise ValueError('tgt_vocab must be defined for decoder-only models')
+
+        # Create decoder
+        _, n_dec = self._get_layer_counts()
         decoder = Decoder(
             DecoderLayer(
                 c.d_model,
-                copy(attn),
-                None,
-                copy(
-                    PositionwiseFeedForward(
-                        c.d_model, c.d_ff, c.dropout, activation=c.ff_activation
-                    )
-                ),
+                copy(attention),
+                None,  # No cross-attention in decoder-only
+                copy(ff),
                 c.pre_norm,
                 c.dropout,
             ),
-            n_layers,
+            n_dec,
         )
 
-        if c.tgt_vocab is None:
-            raise ValueError('tgt_vocab must be defined for decoder-only models.')
-
-        generator = Generator(c.d_model, c.tgt_vocab)
+        # Build model
         model = DecoderOnly(embed, decoder, generator)
         self._init_weights(model)
         return model
@@ -282,14 +336,26 @@ class TransformerFactory:
         Create transformer model based on configuration.
 
         Returns:
-            nn.Module: Created transformer model.
+            Created transformer model.
+
+        Raises:
+            ValueError: If model_type is not supported.
         """
-        creators = {
-            'encoder-decoder': self.__create_encoder_decoder,
-            'encoder-only': self.__create_encoder_only,
-            'decoder-only': self.__create_decoder_only,
-        }
-        return creators[self.config.model_type]()
+        if self.config.model_type not in self._model_creators:
+            raise ValueError(f'Unsupported model_type: {self.config.model_type}')
+
+        return self._model_creators[self.config.model_type]()
+
+    @classmethod
+    def from_config(cls, config: ModelConfig) -> 'TransformerFactory':
+        """Create factory instance from configuration."""
+        return cls(config)
+
+    @classmethod
+    def create(cls, config: ModelConfig) -> nn.Module:
+        """Convenience method to create model directly."""
+        factory = cls(config)
+        return factory.create_model()
 
 
 class EncoderOnly(nn.Module):

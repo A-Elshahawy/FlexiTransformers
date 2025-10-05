@@ -58,7 +58,7 @@ class AbsolutePositionalEncoding(nn.Module):
         Returns:
             torch.Tensor: Tensor with positional encoding added.
         """
-        x = x + self.pe[:, : x.size(1)].requires_grad_(False)
+        x = x + self.pe[:, : x.size(1)].requires_grad_(False)  # type: ignore
         return self.dropout(x)
 
 
@@ -94,31 +94,9 @@ class RotaryPositionalEncoding(nn.Module):
         super().__init__()
         self.d_features = d_features
         self.base = base
+        self.inv_freq: torch.Tensor | None = None
         self.cos_cache: torch.Tensor | None = None
         self.sin_cache: torch.Tensor | None = None
-
-    def _build_cache(self, x: torch.Tensor) -> None:
-        """
-        Build cache for rotary encoding.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-        """
-        if self.cos_cache is not None and x.shape[0] <= self.cos_cache.shape[0]:
-            return
-        seq_len = x.shape[0]
-        device = x.device
-        # Computing frequency bands for rotation
-        self.inv_freq = 1.0 / (
-            self.base ** (torch.arange(0, self.d_features, 2).float().to(device) / self.d_features)
-        )
-        seq_idx = torch.arange(seq_len, device=device).float()
-        idx_theta = torch.einsum('n,d->nd', seq_idx, self.inv_freq)
-
-        idx_theta2 = torch.cat([idx_theta, idx_theta], dim=1)
-
-        self.cos_cache = idx_theta2.cos()[:, None, None, :].to(device)
-        self.sin_cache = idx_theta2.sin()[:, None, None, :].to(device)
 
     def _negative_half(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -134,24 +112,43 @@ class RotaryPositionalEncoding(nn.Module):
 
         return torch.cat([-x[:, :, :, d_2:], x[:, :, :, :d_2]], dim=-1)
 
+    def _build_cache(self, x: torch.Tensor) -> None:
+        seq_len = x.shape[2]  # Correct dimension
+        if (
+            self.inv_freq is not None
+            and self.cos_cache is not None
+            and seq_len <= self.cos_cache.shape[2]
+        ):  # Check dim 2
+            return
+
+        device = x.device
+        self.inv_freq = 1.0 / (
+            self.base ** (torch.arange(0, self.d_features, 2).float().to(device) / self.d_features)
+        )
+        seq_idx = torch.arange(seq_len, device=device).float()
+        idx_theta = torch.einsum('n,d->nd', seq_idx, self.inv_freq)
+        idx_theta2 = torch.cat([idx_theta, idx_theta], dim=1)
+
+        # Shape: [1, 1, seq_len, d_features] to broadcast with [batch, n_heads, seq_len, d_k]
+        self.cos_cache = idx_theta2.cos()[None, None, :, :].to(device)
+        self.sin_cache = idx_theta2.sin()[None, None, :, :].to(device)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Compute the rotary positional encoding of the input tensor.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-
-        Returns:
-            tuple[torch.Tensor, torch.Tensor]: The sin and cos of the rotary positional encoding.
-        """
         self._build_cache(x)
+        seq_len = x.shape[2]
         x_rope, x_pass = x[..., : self.d_features], x[..., self.d_features :]
         neg_half_x = self._negative_half(x_rope)
-        assert self.cos_cache is not None and self.sin_cache is not None
-        x_rope = (x_rope * self.cos_cache[: x.shape[0]]) + (
-            neg_half_x * self.sin_cache[: x.shape[0]]
-        )
 
+        if self.cos_cache is None or self.sin_cache is None:
+            raise RuntimeError('Rotary position encoding caches not initialized')
+
+        # Slice on dimension 2 (sequence dimension)
+        x_rope = (
+            (x_rope * self.cos_cache[:, :, :seq_len])
+            + (  # type: ignore
+                neg_half_x * self.sin_cache[:, :, :seq_len]  # type: ignore
+            )
+        )
         return torch.cat((x_rope, x_pass), dim=-1)
 
 
@@ -184,7 +181,7 @@ class ALiBiPositionalEncoding(nn.Module):
         super().__init__()
         self.num_heads = num_heads
         self.max_len = max_len
-        self.slopes = self._get_slopes(num_heads)
+        self.register_buffer('slopes', self._get_slopes(num_heads))
 
     def _get_slopes(self, n_heads: int) -> torch.Tensor:
         """
@@ -221,4 +218,4 @@ class ALiBiPositionalEncoding(nn.Module):
         positions = torch.arange(seq_len, device=device)
         rel_pos = positions.unsqueeze(0) - positions.unsqueeze(1)
         rel_pos = -torch.abs(rel_pos)
-        return self.slopes.to(device).unsqueeze(-1).unsqueeze(-1) * rel_pos
+        return self.slopes.to(device).unsqueeze(-1).unsqueeze(-1) * rel_pos  # type: ignore
