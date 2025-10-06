@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flexitransformers"
-version = "0.2.0"
+version = "0.2.1"
 
 description = """
             This repository provides a flexible and modular implementation of the Transformer architecture,
