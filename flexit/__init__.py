@@ -19,14 +19,6 @@ Each component is designed to be modular and composable, allowing for
 flexible architecture design while maintaining interoperability.
 """
 
-from factory import DecoderOnly, EncoderOnly, TransformerFactory
-from pos_embeddings import (
-    AbsolutePositionalEncoding,
-    ALiBiPositionalEncoding,
-    RotaryPositionalEncoding,
-)
-from train import Batch, Trainer, TrainerMetrics, TrainState, lr_step, run_epoch
-
 from .attention import (
     AbsoluteMultiHeadedAttention,
     AbstractAttention,
@@ -37,6 +29,7 @@ from .attention import (
 from .callbacks import CheckpointCallback, EarlyStoppingCallback
 from .configs import ConfigDescriptor, ModelConfig
 from .core import Decoder, Encoder, EncoderDecoder, Generator
+from .factory import DecoderOnly, EncoderOnly, TransformerFactory
 from .layers import (
     DecoderLayer,
     Embeddings,
@@ -47,5 +40,11 @@ from .layers import (
 )
 from .loss import BertLoss, LabelSmoothing, LossCompute
 from .models import FlexiBERT, FlexiGPT, FlexiTransformer, TransformerModel
+from .pos_embeddings import (
+    AbsolutePositionalEncoding,
+    ALiBiPositionalEncoding,
+    RotaryPositionalEncoding,
+)
+from .train import Batch, Trainer, TrainerMetrics, TrainState, lr_step, run_epoch
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
