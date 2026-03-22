@@ -1,51 +1,159 @@
 """
-FlexiTransformers Module Components
+FlexiTransformers — modular transformer library.
 
-This module provides the core components of the FlexiTransformers library,
-organizing various transformer architecture elements including attention mechanisms,
-positional encodings, and model structures.
-
-Components:
-- Attention: Multiple attention implementations (Absolute, ALiBi, Relative, Rotary)
-- Callbacks: Training utilities for checkpointing and early stopping
-- Configs: Configuration descriptors for model instantiation
-- Core: Fundamental transformer building blocks (Encoder, Decoder)
-- Layers: Basic neural network components (LayerNorm, FeedForward)
-- Models: Complete transformer implementations with specialized variants
-- Positional Encodings: Various embedding strategies for sequence positions
-- Training: Utilities for efficient model training and evaluation
-
-Each component is designed to be modular and composable, allowing for
-flexible architecture design while maintaining interoperability.
+Supported architectures:
+    - Encoder-Decoder  (T5/BART style, seq2seq)
+    - Encoder-Only     (BERT style, classification)
+    - Decoder-Only     (GPT style, language modeling)
 """
 
+from .attention import MultiHeadAttention
+from .attention.positional import (
+    ALiBiPE,
+    LearnedPE,
+    RelativePE,
+    RelativePEWithBias,
+    RotaryPE,
+    SinusoidalPE,
+    create_pe,
+    register_pe,
+)
+from .blocks import CausalDecoder, CrossAttentionDecoder, Encoder
+from .config import ModelConfig
+from .core import (
+    Embeddings,
+    EmbeddingWithPE,
+    FeedForward,
+    Generator,
+    GLUFeedForward,
+    LayerNorm,
+    RMSNorm,
+    create_norm,
+)
+from .core.feedforward import create_feedforward
+from .factory import TransformerFactory, create_model
+from .inference import DecoderStrategy, EncoderDecoderStrategy, greedy_decode
+from .layers import (
+    CausalDecoderLayer,
+    CrossAttentionDecoderLayer,
+    EncoderLayer,
+    SublayerConnection,
+)
+from .models import (
+    BaseModel,
+    BertHead,
+    DecoderOnlyModel,
+    EncoderDecoderModel,
+    EncoderOnlyModel,
+    FlexiBERT,
+    FlexiGPT,
+    FlexiTransformer,
+    LMHead,
+    SequenceClassificationHead,
+    TokenClassificationHead,
+    TransformerModel,
+)
+from .training import (
+    Batch,
+    BertLoss,
+    Callback,
+    CheckpointCallback,
+    EarlyStoppingCallback,
+    LabelSmoothing,
+    LossCompute,
+    Trainer,
+    TrainerMetrics,
+    TrainState,
+    lr_step,
+    run_epoch,
+)
+from .utils import (
+    clone_module,
+    count_parameters,
+    create_causal_mask,
+    create_combined_mask,
+    create_padding_mask,
+    subsequent_mask,
+)
+from .version import __author__, __copyright__, __license__, __version__
+
 __all__ = [
-    'ALiBiMultiHeadAttention',
-    'AbsoluteMultiHeadedAttention',
-    'BaseTransformer',
+    # Positional encodings
+    'ALiBiPE',
+    # Models
+    'BaseModel',
+    # Training
     'Batch',
+    # Heads
+    'BertHead',
+    'BertLoss',
     'Callback',
+    # Blocks
+    'CausalDecoder',
+    # Layers
+    'CausalDecoderLayer',
     'CheckpointCallback',
-    'ConfigDescriptor',
-    'Decoder',
+    'CrossAttentionDecoder',
+    'CrossAttentionDecoderLayer',
+    'DecoderOnlyModel',
+    # Inference
+    'DecoderStrategy',
     'EarlyStoppingCallback',
+    'EmbeddingWithPE',
+    # Core
+    'Embeddings',
     'Encoder',
-    'EncoderDecoder',
+    'EncoderDecoderModel',
+    'EncoderDecoderStrategy',
+    'EncoderLayer',
+    'EncoderOnlyModel',
+    'FeedForward',
+    'FlexiBERT',
+    'FlexiGPT',
     'FlexiTransformer',
+    'GLUFeedForward',
     'Generator',
+    'LMHead',
     'LabelSmoothing',
     'LayerNorm',
+    'LearnedPE',
     'LossCompute',
+    # Config
     'ModelConfig',
-    'PositionwiseFeedForward',
-    'RelativeGlobalAttention',
-    'RotaryMultiHeadAttention',
+    # Attention
+    'MultiHeadAttention',
+    'RMSNorm',
+    'RelativePE',
+    'RelativePEWithBias',
+    'RotaryPE',
+    'SequenceClassificationHead',
+    'SinusoidalPE',
     'SublayerConnection',
+    'TokenClassificationHead',
     'TrainState',
+    'Trainer',
+    'TrainerMetrics',
+    # Factory
     'TransformerFactory',
-    'clone',
+    'TransformerModel',
+    '__author__',
+    '__copyright__',
+    '__license__',
+    # Version
+    '__version__',
+    # Utils
+    'clone_module',
+    'count_parameters',
+    'create_causal_mask',
+    'create_combined_mask',
+    'create_feedforward',
+    'create_model',
+    'create_norm',
+    'create_padding_mask',
+    'create_pe',
     'greedy_decode',
     'lr_step',
+    'register_pe',
     'run_epoch',
     'subsequent_mask',
 ]
