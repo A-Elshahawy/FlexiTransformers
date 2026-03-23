@@ -2,8 +2,6 @@
 
 ![FlexiTransformers Logo](docs/_static/logo_1.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PyPI version](https://badge.fury.io/py/flexitransformers.svg)](https://pypi.org/project/flexitransformers/0.2.1/) [![Python 3.10+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/) [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/)[![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) ![mypy](https://img.shields.io/badge/mypy-type%20checked-blue) ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-success)
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PyPI version](https://badge.fury.io/py/flexitransformers.svg?cache=0)](https://pypi.org/project/flexitransformers/0.3.0/) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.0.1%2B-red.svg)](https://pytorch.org/) [![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://a-elshahawy.github.io/FlexiTransformers/) [![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) ![mypy](https://img.shields.io/badge/mypy-type%20checked-blue) ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-success)
 
 > **Note:** This library is primarily designed for educational purposes and research experimentation. For production use cases, consider mature frameworks like Hugging Face Transformers.
@@ -94,11 +92,11 @@ model = create_model(config)
 
 ## Architectures
 
-| Architecture | Convenience Class | Config `model_type` | Typical Use |
-| --- | --- | --- | --- |
-| Encoder-Decoder | `FlexiTransformer` | `"encoder-decoder"` | Translation, summarization |
-| Encoder-Only | `FlexiBERT` | `"encoder-only"` | Classification, NER, embeddings |
-| Decoder-Only | `FlexiGPT` | `"decoder-only"` | Language modeling, generation |
+| Architecture    | Convenience Class    | Config `model_type` | Typical Use                     |
+| --------------- | -------------------- | --------------------- | ------------------------------- |
+| Encoder-Decoder | `FlexiTransformer` | `"encoder-decoder"` | Translation, summarization      |
+| Encoder-Only    | `FlexiBERT`        | `"encoder-only"`    | Classification, NER, embeddings |
+| Decoder-Only    | `FlexiGPT`         | `"decoder-only"`    | Language modeling, generation   |
 
 All three are also accessible via `create_model(config)` through `TransformerFactory`.
 
@@ -106,15 +104,15 @@ All three are also accessible via `create_model(config)` through `TransformerFac
 
 ## Positional Encodings
 
-| Name | `pe_type` | Injected at | Representative models |
-| --- | --- | --- | --- |
-| Sinusoidal | `"absolute"` | Embedding | Vaswani et al. 2017 |
-| Learned | `"learned"` | Embedding | BERT, GPT-2 |
-| Rotary (RoPE) | `"rotary"` | Q/K projections | LLaMA, GPT-NeoX |
-| ALiBi | `"alibi"` | Attention scores | MPT, BLOOM |
-| Relative | `"relative"` | Attention scores | Transformer-XL |
-| Relative+Bias | `"relative_bias"` | Attention scores | T5 |
-| None | `"none"` | — | Ablations |
+| Name          | `pe_type`         | Injected at      | Representative models |
+| ------------- | ------------------- | ---------------- | --------------------- |
+| Sinusoidal    | `"absolute"`      | Embedding        | Vaswani et al. 2017   |
+| Learned       | `"learned"`       | Embedding        | BERT, GPT-2           |
+| Rotary (RoPE) | `"rotary"`        | Q/K projections  | LLaMA, GPT-NeoX       |
+| ALiBi         | `"alibi"`         | Attention scores | MPT, BLOOM            |
+| Relative      | `"relative"`      | Attention scores | Transformer-XL        |
+| Relative+Bias | `"relative_bias"` | Attention scores | T5                    |
+| None          | `"none"`          | —               | Ablations             |
 
 ### Custom PE Plugin
 
@@ -211,17 +209,17 @@ trainer = Trainer(
 
 See the [`examples/`](examples/) directory for end-to-end runnable scripts:
 
-| File | What it demonstrates |
-| --- | --- |
-| [`01_quick_start.py`](examples/01_quick_start.py) | `FlexiGPT`, `FlexiBERT`, `FlexiTransformer` in 3 lines each |
-| [`02_manual_config.py`](examples/02_manual_config.py) | `ModelConfig` + `create_model` for all 3 architectures |
-| [`03_positional_encodings.py`](examples/03_positional_encodings.py) | All 6 PE types end-to-end + `create_pe` factory |
-| [`04_encoder_only.py`](examples/04_encoder_only.py) | Classification heads (BERT-style) |
-| [`05_encoder_decoder.py`](examples/05_encoder_decoder.py) | Seq2seq training loop |
-| [`06_decoder_only.py`](examples/06_decoder_only.py) | LM training + greedy decoding |
-| [`07_output_heads.py`](examples/07_output_heads.py) | `LMHead` weight tying, all head types |
-| [`08_save_load.py`](examples/08_save_load.py) | `model.save()` / `Model.load()` round-trip |
-| [`09_custom_pe.py`](examples/09_custom_pe.py) | `register_pe` plugin with custom PE class |
+| File                                                               | What it demonstrates                                              |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| [`01_quick_start.py`](examples/01_quick_start.py)                   | `FlexiGPT`, `FlexiBERT`, `FlexiTransformer` in 3 lines each |
+| [`02_manual_config.py`](examples/02_manual_config.py)               | `ModelConfig` + `create_model` for all 3 architectures        |
+| [`03_positional_encodings.py`](examples/03_positional_encodings.py) | All 6 PE types end-to-end +`create_pe` factory                  |
+| [`04_encoder_only.py`](examples/04_encoder_only.py)                 | Classification heads (BERT-style)                                 |
+| [`05_encoder_decoder.py`](examples/05_encoder_decoder.py)           | Seq2seq training loop                                             |
+| [`06_decoder_only.py`](examples/06_decoder_only.py)                 | LM training + greedy decoding                                     |
+| [`07_output_heads.py`](examples/07_output_heads.py)                 | `LMHead` weight tying, all head types                           |
+| [`08_save_load.py`](examples/08_save_load.py)                       | `model.save()` / `Model.load()` round-trip                    |
+| [`09_custom_pe.py`](examples/09_custom_pe.py)                       | `register_pe` plugin with custom PE class                       |
 
 ---
 
@@ -229,111 +227,111 @@ See the [`examples/`](examples/) directory for end-to-end runnable scripts:
 
 ### Models
 
-| Symbol | Description |
-| --- | --- |
-| `FlexiGPT` | Decoder-only convenience constructor |
-| `FlexiBERT` | Encoder-only convenience constructor |
-| `FlexiTransformer` | Encoder-decoder convenience constructor |
-| `DecoderOnlyModel` | Full decoder-only model class |
-| `EncoderOnlyModel` | Full encoder-only model class |
-| `EncoderDecoderModel` | Full encoder-decoder model class |
-| `BaseModel` | Abstract base with `save()` / `load()` |
-| `TransformerModel` | Generic model via factory |
+| Symbol                  | Description                                |
+| ----------------------- | ------------------------------------------ |
+| `FlexiGPT`            | Decoder-only convenience constructor       |
+| `FlexiBERT`           | Encoder-only convenience constructor       |
+| `FlexiTransformer`    | Encoder-decoder convenience constructor    |
+| `DecoderOnlyModel`    | Full decoder-only model class              |
+| `EncoderOnlyModel`    | Full encoder-only model class              |
+| `EncoderDecoderModel` | Full encoder-decoder model class           |
+| `BaseModel`           | Abstract base with `save()` / `load()` |
+| `TransformerModel`    | Generic model via factory                  |
 
 ### Config & Factory
 
-| Symbol | Description |
-| --- | --- |
-| `ModelConfig` | Dataclass for all model hyperparameters |
-| `create_model(config)` | Build a model from `ModelConfig` |
-| `TransformerFactory` | Lower-level factory class |
+| Symbol                   | Description                             |
+| ------------------------ | --------------------------------------- |
+| `ModelConfig`          | Dataclass for all model hyperparameters |
+| `create_model(config)` | Build a model from `ModelConfig`      |
+| `TransformerFactory`   | Lower-level factory class               |
 
 ### Attention
 
-| Symbol | Description |
-| --- | --- |
+| Symbol                 | Description                              |
+| ---------------------- | ---------------------------------------- |
 | `MultiHeadAttention` | Unified MHA with pluggable PE + KV cache |
 
 ### PE Classes
 
-| Symbol | Description |
-| --- | --- |
-| `SinusoidalPE` | Fixed sinusoidal (embedding-level) |
-| `LearnedPE` | Learned position embeddings |
-| `RotaryPE` | RoPE applied to Q/K |
-| `ALiBiPE` | Linear bias on attention scores |
-| `RelativePE` | Relative position representations |
-| `RelativePEWithBias` | T5-style scalar relative bias |
-| `create_pe(config)` | Factory: config → PE instance |
-| `register_pe(name, cls)` | Register a custom PE class |
+| Symbol                     | Description                        |
+| -------------------------- | ---------------------------------- |
+| `SinusoidalPE`           | Fixed sinusoidal (embedding-level) |
+| `LearnedPE`              | Learned position embeddings        |
+| `RotaryPE`               | RoPE applied to Q/K                |
+| `ALiBiPE`                | Linear bias on attention scores    |
+| `RelativePE`             | Relative position representations  |
+| `RelativePEWithBias`     | T5-style scalar relative bias      |
+| `create_pe(config)`      | Factory: config → PE instance     |
+| `register_pe(name, cls)` | Register a custom PE class         |
 
 ### Core Components
 
-| Symbol | Description |
-| --- | --- |
-| `Embeddings` | Token embedding with scaling |
+| Symbol              | Description                           |
+| ------------------- | ------------------------------------- |
+| `Embeddings`      | Token embedding with scaling          |
 | `EmbeddingWithPE` | Token embedding + positional encoding |
-| `FeedForward` | Standard FFN (ReLU / GELU / SiLU) |
-| `GLUFeedForward` | Gated linear unit FFN (SwiGLU style) |
-| `Generator` | Final linear + softmax projection |
-| `LayerNorm` | Standard layer normalization |
-| `RMSNorm` | Root-mean-square normalization |
+| `FeedForward`     | Standard FFN (ReLU / GELU / SiLU)     |
+| `GLUFeedForward`  | Gated linear unit FFN (SwiGLU style)  |
+| `Generator`       | Final linear + softmax projection     |
+| `LayerNorm`       | Standard layer normalization          |
+| `RMSNorm`         | Root-mean-square normalization        |
 
 ### Layers & Blocks
 
-| Symbol | Description |
-| --- | --- |
-| `EncoderLayer` | Self-attention + FFN encoder layer |
-| `CausalDecoderLayer` | Masked self-attention + FFN decoder layer |
+| Symbol                         | Description                                  |
+| ------------------------------ | -------------------------------------------- |
+| `EncoderLayer`               | Self-attention + FFN encoder layer           |
+| `CausalDecoderLayer`         | Masked self-attention + FFN decoder layer    |
 | `CrossAttentionDecoderLayer` | Self-attention + cross-attention + FFN layer |
-| `SublayerConnection` | Residual + norm wrapper |
-| `Encoder` | Stack of `EncoderLayer` |
-| `CausalDecoder` | Stack of `CausalDecoderLayer` |
-| `CrossAttentionDecoder` | Stack of `CrossAttentionDecoderLayer` |
+| `SublayerConnection`         | Residual + norm wrapper                      |
+| `Encoder`                    | Stack of `EncoderLayer`                    |
+| `CausalDecoder`              | Stack of `CausalDecoderLayer`              |
+| `CrossAttentionDecoder`      | Stack of `CrossAttentionDecoderLayer`      |
 
 ### Output Heads
 
-| Symbol | Description |
-| --- | --- |
-| `LMHead` | Language model head (supports weight tying) |
-| `BertHead` | BERT pooler + classifier |
-| `SequenceClassificationHead` | CLS-token classification |
-| `TokenClassificationHead` | Per-token classification (NER) |
+| Symbol                         | Description                                 |
+| ------------------------------ | ------------------------------------------- |
+| `LMHead`                     | Language model head (supports weight tying) |
+| `BertHead`                   | BERT pooler + classifier                    |
+| `SequenceClassificationHead` | CLS-token classification                    |
+| `TokenClassificationHead`    | Per-token classification (NER)              |
 
 ### Inference API
 
-| Symbol | Description |
-| --- | --- |
-| `greedy_decode` | Greedy autoregressive generation |
-| `sample_decode` | Generation with temperature + top-k/p sampling |
-| `temperature_sample` | Temperature-scaled sampling on logits |
-| `top_k_sample` | Top-k sampling on logits |
-| `top_p_sample` | Nucleus (top-p) sampling on logits |
+| Symbol                 | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `greedy_decode`      | Greedy autoregressive generation               |
+| `sample_decode`      | Generation with temperature + top-k/p sampling |
+| `temperature_sample` | Temperature-scaled sampling on logits          |
+| `top_k_sample`       | Top-k sampling on logits                       |
+| `top_p_sample`       | Nucleus (top-p) sampling on logits             |
 
 ### Training API
 
-| Symbol | Description |
-| --- | --- |
-| `Trainer` | Full training loop with callbacks and metrics |
-| `Batch` | Batching + masking utility |
-| `LabelSmoothing` | Label smoothing loss |
-| `LossCompute` | Loss wrapper with gradient step |
-| `BertLoss` | MLM-style loss for encoder-only |
-| `run_epoch` | Single-epoch training/eval loop |
-| `Callback` | Base callback class |
-| `CheckpointCallback` | Save best/latest checkpoints |
-| `EarlyStoppingCallback` | Stop when metric plateaus |
-| `TrainerMetrics` | Metrics container returned by `fit()` |
+| Symbol                    | Description                                   |
+| ------------------------- | --------------------------------------------- |
+| `Trainer`               | Full training loop with callbacks and metrics |
+| `Batch`                 | Batching + masking utility                    |
+| `LabelSmoothing`        | Label smoothing loss                          |
+| `LossCompute`           | Loss wrapper with gradient step               |
+| `BertLoss`              | MLM-style loss for encoder-only               |
+| `run_epoch`             | Single-epoch training/eval loop               |
+| `Callback`              | Base callback class                           |
+| `CheckpointCallback`    | Save best/latest checkpoints                  |
+| `EarlyStoppingCallback` | Stop when metric plateaus                     |
+| `TrainerMetrics`        | Metrics container returned by `fit()`       |
 
 ### Utilities
 
-| Symbol | Description |
-| --- | --- |
-| `subsequent_mask` | Causal (autoregressive) mask |
-| `create_causal_mask` | Causal mask from sequence length |
-| `create_padding_mask` | Padding mask from token ids |
-| `create_combined_mask` | Causal + padding combined |
-| `count_parameters` | Count trainable parameters |
+| Symbol                   | Description                      |
+| ------------------------ | -------------------------------- |
+| `subsequent_mask`      | Causal (autoregressive) mask     |
+| `create_causal_mask`   | Causal mask from sequence length |
+| `create_padding_mask`  | Padding mask from token ids      |
+| `create_combined_mask` | Causal + padding combined        |
+| `count_parameters`     | Count trainable parameters       |
 
 ---
 
@@ -371,6 +369,7 @@ config = ModelConfig(
     ff_activation='relu', # 'relu', 'gelu', 'silu', etc.
     init_method='xavier_uniform'
 )
+
 ```
 
 ## API Reference
