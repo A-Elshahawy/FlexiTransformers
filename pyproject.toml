@@ -94,6 +94,11 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
+[[tool.mypy.overrides]]
+# PyTorch tensor ops return Any without stubs — suppress the false-positive cascade
+module = "flexit.*"
+warn_return_any = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
