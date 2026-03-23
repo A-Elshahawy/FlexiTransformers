@@ -6,29 +6,457 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FlexiTransformers Documentation &mdash; FlexiTransformers 0.1.0 documentation</title>
+  <title>FlexiTransformers Documentation &mdash; FlexiTransformers 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
       <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
       <script src="_static/copybutton.js?v=f281be69"></script>
       <script src="_static/design-tabs.js?v=f930bc37"></script>
-      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs"></script>
-      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs"></script>
-      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.4/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
       <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
-      <script type="module">
-import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.2.0/dist/mermaid.esm.min.mjs";
-window.addEventListener("load", () => mermaid.run());
-</script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -85,16 +513,19 @@ window.addEventListener("load", () => mermaid.run());
              
   <section id="flexitransformers-documentation">
 <h1>FlexiTransformers Documentation<a class="headerlink" href="#flexitransformers-documentation" title="Link to this heading"></a></h1>
-<img alt="FlexiTransformers Logo" class="align-center" src="_images/new_logo.png" />
+<img alt="FlexiTransformers Logo" class="align-center" src="_images/logo_1.png" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
 <a class="reference external image-reference" href="https://opensource.org/licenses/MIT"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
 </a>
 <a class="reference external image-reference" href="https://pypi.org/project/flexitransformers/"><img alt="PyPI version" src="https://badge.fury.io/py/flexitransformers.svg" />
 </a>
-<a class="reference external image-reference" href="https://flexitransformers.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/flexitransformers/badge/?version=latest" />
-</a>
 <a class="reference external image-reference" href="https://github.com/astral-sh/ruff"><img alt="Code Style: Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" />
 </a>
-<p>A modular Transformer framework supporting multiple architectures and attention mechanisms.</p>
+<img alt="mypy" src="https://img.shields.io/badge/mypy-type%20checked-blue" />
+<p>A modular transformer framework supporting encoder-decoder, encoder-only (BERT),
+and decoder-only (GPT) architectures with a pluggable positional encoding system.</p>
 <pre  class="mermaid">
         graph TD
     A[FlexiTransformers] --&gt; B[Architectures]
@@ -105,26 +536,28 @@ window.addEventListener("load", () => mermaid.run());
     B --&gt; B2[Encoder-Only]
     B --&gt; B3[Decoder-Only]
 
-    C --&gt; C1[Attention Mechanisms]
-    C --&gt; C2[Positional Embeddings]
-    C --&gt; C3[Layer Implementations]
+    C --&gt; C1[MultiHeadAttention]
+    C --&gt; C2[Positional Encodings]
+    C --&gt; C3[Layers &amp; Blocks]
 
-    C1 --&gt; C1a[Absolute]
-    C1 --&gt; C1b[Rotary/RoPE]
-    C1 --&gt; C1c[ALiBi]
-    C1 --&gt; C1d[Relative Global]
+    C2 --&gt; C2a[Sinusoidal / Learned]
+    C2 --&gt; C2b[Rotary - RoPE]
+    C2 --&gt; C2c[ALiBi]
+    C2 --&gt; C2d[Relative / Relative+Bias]
 
-    D --&gt; D1[Trainer Class]
+    D --&gt; D1[Trainer]
     D --&gt; D2[Callbacks]
     D --&gt; D3[Loss Functions]
     </pre><section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Multi-Architecture Support</strong>: Build Encoder-Decoder, Encoder-only (BERT), or Decoder-only (GPT) models</p></li>
-<li><p><strong>Modular Components</strong>: Swap attention mechanisms, positional embeddings, and feed-forward layers</p></li>
-<li><p><strong>Production-Ready</strong>: Type hints, comprehensive docs, and CI/CD tested</p></li>
-<li><p><strong>Training Utilities</strong>: Built-in trainer with progress monitoring and callback system</p></li>
-<li><p><strong>10+ Attention Variants</strong>: Includes Absolute, Rotary (RoPE), ALiBi, and Relative Global Attention</p></li>
+<li><p><strong>3 architectures</strong> — Encoder-Decoder, Encoder-Only (BERT), Decoder-Only (GPT)</p></li>
+<li><p><strong>6 positional encodings</strong> — Sinusoidal, Learned, RoPE, ALiBi, Relative, Relative+Bias</p></li>
+<li><p><strong>Pluggable PE system</strong> — <code class="docutils literal notranslate"><span class="pre">register_pe(&quot;name&quot;,</span> <span class="pre">MyPE)</span></code> to add custom encodings</p></li>
+<li><p><strong>KV cache</strong> — efficient autoregressive inference with per-layer caching</p></li>
+<li><p><strong>Sampling strategies</strong> — greedy, temperature, top-k, nucleus (top-p)</p></li>
+<li><p><strong>Training utilities</strong> — <code class="docutils literal notranslate"><span class="pre">Trainer</span></code>, callbacks, <code class="docutils literal notranslate"><span class="pre">LabelSmoothing</span></code>, <code class="docutils literal notranslate"><span class="pre">run_epoch</span></code></p></li>
+<li><p><strong>Fully typed</strong> — mypy-checked, ruff-formatted, pre-commit enforced</p></li>
 </ul>
 </section>
 <section id="installation">
@@ -135,90 +568,157 @@ window.addEventListener("load", () => mermaid.run());
 </section>
 <section id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
-<section id="encoder-decoder-model">
-<h3>Encoder-Decoder Model<a class="headerlink" href="#encoder-decoder-model" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransformerModel</span>
+<section id="decoder-only-gpt-style">
+<h3>Decoder-Only (GPT-style)<a class="headerlink" href="#decoder-only-gpt-style" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlexiGPT</span><span class="p">,</span> <span class="n">greedy_decode</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">TransformerModel</span><span class="p">(</span>
- <span class="s1">&#39;src_vocab&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
- <span class="s1">&#39;tgt_vocab&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
- <span class="s1">&#39;d_model&#39;</span><span class="p">:</span> <span class="mi">768</span><span class="p">,</span>
- <span class="s1">&#39;n_heads&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
- <span class="s1">&#39;n_layers&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
- <span class="s1">&#39;pe_type&#39;</span><span class="p">:</span> <span class="s1">&#39;absolute&#39;</span><span class="p">,</span>
- <span class="s1">&#39;init_method&#39;</span><span class="p">:</span> <span class="s1">&#39;xavier_uniform&#39;</span><span class="p">,</span>
- <span class="s1">&#39;pre_norm&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FlexiGPT</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span> <span class="n">d_model</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32000</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">greedy_decode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">start_symbol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># [1, 59]</span>
 </pre></div>
 </div>
 </section>
-<section id="bert-style-model">
-<h3>BERT-Style Model<a class="headerlink" href="#bert-style-model" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlexiBERT</span>
+<section id="encoder-only-bert-style">
+<h3>Encoder-Only (BERT-style)<a class="headerlink" href="#encoder-only-bert-style" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlexiBERT</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="n">bert_model</span> <span class="o">=</span> <span class="n">FlexiBERT</span><span class="p">(</span>
-    <span class="n">src_vocab</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
-    <span class="n">num_classes</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">d_model</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span>
-    <span class="n">ff_activation</span><span class="o">=</span><span class="s1">&#39;gelu&#39;</span><span class="p">,</span>
-    <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;alibi&#39;</span>
-<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">FlexiBERT</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span> <span class="n">d_model</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                  <span class="n">d_ff</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">num_classes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32000</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">64</span><span class="p">))</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">logits</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># [4, 2]</span>
 </pre></div>
 </div>
 </section>
-<section id="gpt-style-model">
-<h3>GPT-Style Model<a class="headerlink" href="#gpt-style-model" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlexiGPT</span>
+<section id="advanced-config-encoder-decoder">
+<h3>Advanced Config (Encoder-Decoder)<a class="headerlink" href="#advanced-config-encoder-decoder" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">create_model</span>
 
-<span class="n">gpt_model</span> <span class="o">=</span> <span class="n">FlexiGPT</span><span class="p">(</span>
-    <span class="n">tgt_vocab</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span>
-    <span class="n">d_model</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="p">(</span>
+    <span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;encoder-decoder&#39;</span><span class="p">,</span>
+    <span class="n">src_vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
+    <span class="n">tgt_vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
+    <span class="n">d_model</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">n_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">n_layers</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+    <span class="n">d_ff</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
     <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;rotary&#39;</span><span class="p">,</span>
-    <span class="n">pre</span><span class="o">-</span><span class="n">norm</span><span class="o">=</span> <span class="kc">True</span>
+    <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
 <pre  class="mermaid">
         flowchart LR
- A[Configuration] --&gt; B[TransformerFactory]
- B --&gt; C{Architecture}
- C --&gt;|Encoder-Decoder| D[EncoderDecoderArchitectures]
- C --&gt;|Encoder-Only| E[EncoderOnlyArchitectures]
- C --&gt;|Decoder-Only| F[DecoderOnlArchitectures]
- D --&gt;|Generic Class| G[FlexiTransformer]
- D --&gt;|Dedicated Class| H[TransformerModel]
- E --&gt;|Dedicated Class| I[FlexiBERT]
- E --&gt;|Generic Class| J[FlexiTransformer]
- F --&gt;|Dedicated Class| K[FlexiGPT]
- F --&gt;|Generic Class| L[FlexiTransformer]
- G --&gt; M[Model Instance]
- H --&gt; M
- I --&gt; M
- J --&gt; M
- K --&gt; M
- L --&gt; M
+    A[ModelConfig] --&gt; B[TransformerFactory]
+    B --&gt; C{model_type}
+    C --&gt;|encoder-decoder| D[EncoderDecoderModel]
+    C --&gt;|encoder-only| E[EncoderOnlyModel]
+    C --&gt;|decoder-only| F[DecoderOnlyModel]
+    D --&gt; G[FlexiTransformer]
+    E --&gt; H[FlexiBERT]
+    F --&gt; I[FlexiGPT]
     </pre></section>
+</section>
+<section id="positional-encodings">
+<h2>Positional Encodings<a class="headerlink" href="#positional-encodings" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">pe_type</span></code></p></th>
+<th class="head"><p>Injected at</p></th>
+<th class="head"><p>Representative models</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Sinusoidal</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;absolute&quot;</span></code></p></td>
+<td><p>Embedding</p></td>
+<td><p>Vaswani et al. 2017</p></td>
+</tr>
+<tr class="row-odd"><td><p>Learned</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;learned&quot;</span></code></p></td>
+<td><p>Embedding</p></td>
+<td><p>BERT, GPT-2</p></td>
+</tr>
+<tr class="row-even"><td><p>Rotary (RoPE)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;rotary&quot;</span></code></p></td>
+<td><p>Q/K projections</p></td>
+<td><p>LLaMA, GPT-NeoX</p></td>
+</tr>
+<tr class="row-odd"><td><p>ALiBi</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;alibi&quot;</span></code></p></td>
+<td><p>Attention scores</p></td>
+<td><p>MPT, BLOOM</p></td>
+</tr>
+<tr class="row-even"><td><p>Relative</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;relative&quot;</span></code></p></td>
+<td><p>Attention scores</p></td>
+<td><p>Transformer-XL</p></td>
+</tr>
+<tr class="row-odd"><td><p>Relative+Bias</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;relative_bias&quot;</span></code></p></td>
+<td><p>Attention scores</p></td>
+<td><p>T5</p></td>
+</tr>
+<tr class="row-even"><td><p>None</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code></p></td>
+<td><p>—</p></td>
+<td><p>Ablations</p></td>
+</tr>
+</tbody>
+</table>
+<p>Custom PE via plugin:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_pe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flexit.attention.positional</span><span class="w"> </span><span class="kn">import</span> <span class="n">PositionalEncoding</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NoPE</span><span class="p">(</span><span class="n">PositionalEncoding</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">injection_point</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;embedding&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_to_embedding</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+<span class="n">register_pe</span><span class="p">(</span><span class="s2">&quot;nope&quot;</span><span class="p">,</span> <span class="n">NoPE</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inference-strategies">
+<h2>Inference Strategies<a class="headerlink" href="#inference-strategies" title="Link to this heading"></a></h2>
+<p>Greedy decoding and nucleus sampling are both available out of the box:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="n">greedy_decode</span><span class="p">,</span> <span class="n">sample_decode</span><span class="p">,</span> <span class="n">temperature_sample</span><span class="p">,</span> <span class="n">top_k_sample</span><span class="p">,</span> <span class="n">top_p_sample</span>
+
+<span class="c1"># Greedy</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">greedy_decode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">start_symbol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Nucleus (top-p) + temperature</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">sample_decode</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">src_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">start_symbol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">top_p</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+<span class="c1"># Standalone logit samplers</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">temperature_sample</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">top_k_sample</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">top_p_sample</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="core-architecture">
 <h2>Core Architecture<a class="headerlink" href="#core-architecture" title="Link to this heading"></a></h2>
-<p>Three Fundamental Components:</p>
-<ol class="arabic simple">
-<li><p><strong>Embedding System</strong>
-- Token embeddings + Positional Encoding
-- Supports Absolute, Rotary (RoPE), and ALiBi encoding</p></li>
-<li><p><strong>Transformer Layers</strong>
-- Configurable encoder/decoder stacks
-- Layer normalization variants (pre-norm/post-norm)</p></li>
-<li><p><strong>Task Heads</strong>
-- Sequence generation (Encoder-Decoder)
-- Classification (Encoder-only)
-- Autoregressive generation (Decoder-only)</p></li>
-</ol>
 <pre  class="mermaid">
         stateDiagram-v2
-    [*] --&gt; InputEmbedding
-    InputEmbedding --&gt; PositionalEncoding
-    PositionalEncoding --&gt; TransformerLayers
+    [*] --&gt; EmbeddingWithPE
+    EmbeddingWithPE --&gt; TransformerLayers
 
     state TransformerLayers {
         [*] --&gt; EncoderStack
@@ -228,134 +728,102 @@ window.addEventListener("load", () => mermaid.run());
         DecoderStack --&gt; [*]
     }
 
-    TransformerLayers --&gt; TaskHead
-    TaskHead --&gt; [*]
-    </pre></section>
+    TransformerLayers --&gt; OutputHead
+    OutputHead --&gt; [*]
+    </pre><p>Three fundamental building blocks:</p>
+<ol class="arabic simple">
+<li><p><strong>Embedding System</strong> — <code class="docutils literal notranslate"><span class="pre">EmbeddingWithPE</span></code> combines token embeddings with the
+chosen positional encoding (or passes through for QK/score-level encodings).</p></li>
+<li><p><strong>Transformer Layers</strong> — <code class="docutils literal notranslate"><span class="pre">EncoderLayer</span></code>, <code class="docutils literal notranslate"><span class="pre">CausalDecoderLayer</span></code>,
+<code class="docutils literal notranslate"><span class="pre">CrossAttentionDecoderLayer</span></code> — each wraps <code class="docutils literal notranslate"><span class="pre">MultiHeadAttention</span></code> + <code class="docutils literal notranslate"><span class="pre">FeedForward</span></code>
+inside <code class="docutils literal notranslate"><span class="pre">SublayerConnection</span></code> (residual + norm, pre- or post-norm).</p></li>
+<li><p><strong>Output Heads</strong> — <code class="docutils literal notranslate"><span class="pre">LMHead</span></code> (language modeling, weight tying), <code class="docutils literal notranslate"><span class="pre">BertHead</span></code>,
+<code class="docutils literal notranslate"><span class="pre">SequenceClassificationHead</span></code>, <code class="docutils literal notranslate"><span class="pre">TokenClassificationHead</span></code>.</p></li>
+</ol>
+</section>
 <section id="training-pipeline">
 <h2>Training Pipeline<a class="headerlink" href="#training-pipeline" title="Link to this heading"></a></h2>
-<p>Example Training Loop:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">Batch</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">flexit.loss</span><span class="w"> </span><span class="kn">import</span> <span class="n">LossCompute</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">flexit.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">CheckpointCallback</span><span class="p">,</span> <span class="n">EarlyStoppingCallback</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ModelConfig</span><span class="p">,</span> <span class="n">create_model</span><span class="p">,</span>
+    <span class="n">Trainer</span><span class="p">,</span> <span class="n">LossCompute</span><span class="p">,</span> <span class="n">LabelSmoothing</span><span class="p">,</span>
+    <span class="n">CheckpointCallback</span><span class="p">,</span> <span class="n">EarlyStoppingCallback</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="c1"># Initialize components</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="p">(</span><span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;decoder-only&#39;</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
+                     <span class="n">d_model</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">n_heads</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="n">criterion</span> <span class="o">=</span> <span class="n">LabelSmoothing</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">smoothing</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">loss_fn</span> <span class="o">=</span> <span class="n">LossCompute</span><span class="p">(</span><span class="n">generator</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">generator</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">),</span>
-    <span class="n">loss_fn</span><span class="o">=</span><span class="n">LossCompute</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">generator</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()),</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">3e-4</span><span class="p">),</span>
+    <span class="n">loss_fn</span><span class="o">=</span><span class="n">loss_fn</span><span class="p">,</span>
     <span class="n">train_dataloader</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span>
     <span class="n">val_dataloader</span><span class="o">=</span><span class="n">val_loader</span><span class="p">,</span>
-    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">CheckpointCallback</span><span class="p">(),</span> <span class="n">EarlyStoppingCallback</span><span class="p">()]</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">CheckpointCallback</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;ckpts/&quot;</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">),</span>
+        <span class="n">EarlyStoppingCallback</span><span class="p">(</span><span class="n">patience</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
 <span class="p">)</span>
-
-<span class="c1"># Run training</span>
 <span class="n">metrics</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="customization-guide">
-<h2>Customization Guide<a class="headerlink" href="#customization-guide" title="Link to this heading"></a></h2>
-<ol class="arabic">
-<li><p><strong>Configuration-Driven Models</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelConfig</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">ModelConfig</span><span class="p">(</span>
-    <span class="n">d_model</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span>
-    <span class="n">n_heads</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
-    <span class="n">pe_type</span><span class="o">=</span><span class="s1">&#39;relative&#39;</span><span class="p">,</span>
-    <span class="n">ff_activation</span><span class="o">=</span><span class="s1">&#39;gelu&#39;</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</li>
-<li><p><strong>Custom Attention Layer</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.attention</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractAttention</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">LocalWindowAttention</span><span class="p">(</span><span class="n">AbstractAttention</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># Implement windowed attention</span>
-        <span class="k">return</span> <span class="n">attention_output</span>
-</pre></div>
-</div>
-</li>
-<li><p><strong>Custom Positional Encoding</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">flexit.pos_embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbsolutePositionalEncoding</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">LearnedPositionalEncoding</span><span class="p">(</span><span class="n">AbsolutePositionalEncoding</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d_model</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">5000</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pe</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_len</span><span class="p">,</span> <span class="n">d_model</span><span class="p">))</span>
-</pre></div>
-</div>
-</li>
-</ol>
-</section>
-<section id="modules-overview">
-<h2>Modules Overview<a class="headerlink" href="#modules-overview" title="Link to this heading"></a></h2>
+<section id="package-structure">
+<h2>Package Structure<a class="headerlink" href="#package-structure" title="Link to this heading"></a></h2>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 30.0%" />
 <col style="width: 70.0%" />
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>Module</p></th>
-<th class="head"><p>Key Components</p></th>
+<tr class="row-odd"><th class="head"><p>Subpackage</p></th>
+<th class="head"><p>Key components</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>attention.py</p></td>
-<td><p>Multi-head attention implementations</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.attention</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MultiHeadAttention</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p>configs.py</p></td>
-<td><p>Model configuration dataclasses</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.attention.positional</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SinusoidalPE</span></code>, <code class="docutils literal notranslate"><span class="pre">LearnedPE</span></code>, <code class="docutils literal notranslate"><span class="pre">RotaryPE</span></code>, <code class="docutils literal notranslate"><span class="pre">ALiBiPE</span></code>, <code class="docutils literal notranslate"><span class="pre">RelativePE</span></code>, <code class="docutils literal notranslate"><span class="pre">RelativePEWithBias</span></code>, <code class="docutils literal notranslate"><span class="pre">create_pe</span></code>, <code class="docutils literal notranslate"><span class="pre">register_pe</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>factory.py</p></td>
-<td><p>Model creation from configurations</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.config</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModelConfig</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p>pos_embeddings.py</p></td>
-<td><p>Positional encoding implementations</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.core</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Embeddings</span></code>, <code class="docutils literal notranslate"><span class="pre">EmbeddingWithPE</span></code>, <code class="docutils literal notranslate"><span class="pre">FeedForward</span></code>, <code class="docutils literal notranslate"><span class="pre">GLUFeedForward</span></code>, <code class="docutils literal notranslate"><span class="pre">Generator</span></code>, <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code>, <code class="docutils literal notranslate"><span class="pre">RMSNorm</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>train.py</p></td>
-<td><p>Trainer class with metrics tracking</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.layers</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EncoderLayer</span></code>, <code class="docutils literal notranslate"><span class="pre">CausalDecoderLayer</span></code>, <code class="docutils literal notranslate"><span class="pre">CrossAttentionDecoderLayer</span></code>, <code class="docutils literal notranslate"><span class="pre">SublayerConnection</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p>callbacks.py</p></td>
-<td><p>Checkpointing, early stopping, custom callbacks</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.blocks</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Encoder</span></code>, <code class="docutils literal notranslate"><span class="pre">CausalDecoder</span></code>, <code class="docutils literal notranslate"><span class="pre">CrossAttentionDecoder</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.models</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FlexiGPT</span></code>, <code class="docutils literal notranslate"><span class="pre">FlexiBERT</span></code>, <code class="docutils literal notranslate"><span class="pre">FlexiTransformer</span></code>, <code class="docutils literal notranslate"><span class="pre">DecoderOnlyModel</span></code>, <code class="docutils literal notranslate"><span class="pre">EncoderOnlyModel</span></code>, <code class="docutils literal notranslate"><span class="pre">EncoderDecoderModel</span></code>, <code class="docutils literal notranslate"><span class="pre">BaseModel</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.models.heads</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">LMHead</span></code>, <code class="docutils literal notranslate"><span class="pre">BertHead</span></code>, <code class="docutils literal notranslate"><span class="pre">SequenceClassificationHead</span></code>, <code class="docutils literal notranslate"><span class="pre">TokenClassificationHead</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.factory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TransformerFactory</span></code>, <code class="docutils literal notranslate"><span class="pre">create_model</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.inference</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">greedy_decode</span></code>, <code class="docutils literal notranslate"><span class="pre">sample_decode</span></code>, <code class="docutils literal notranslate"><span class="pre">temperature_sample</span></code>, <code class="docutils literal notranslate"><span class="pre">top_k_sample</span></code>, <code class="docutils literal notranslate"><span class="pre">top_p_sample</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.training</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="docutils literal notranslate"><span class="pre">Batch</span></code>, <code class="docutils literal notranslate"><span class="pre">LabelSmoothing</span></code>, <code class="docutils literal notranslate"><span class="pre">LossCompute</span></code>, <code class="docutils literal notranslate"><span class="pre">BertLoss</span></code>, <code class="docutils literal notranslate"><span class="pre">run_epoch</span></code>, <code class="docutils literal notranslate"><span class="pre">Callback</span></code>, <code class="docutils literal notranslate"><span class="pre">CheckpointCallback</span></code>, <code class="docutils literal notranslate"><span class="pre">EarlyStoppingCallback</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">flexit.utils</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">subsequent_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">create_causal_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">create_padding_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">create_combined_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">count_parameters</span></code></p></td>
 </tr>
 </tbody>
 </table>
-<pre  class="mermaid">
-        classDiagram
-    TransformerFactory --&gt; FlexiTransformer
-    TransformerFactory --&gt; TransformerModel
-    TransformerFactory --&gt; FlexiBERT
-    TransformerFactory --&gt; FlexiGPT
-
-    class EncoderDecoder {
-        +Encoder encoder
-        +Decoder decoder
-        +Generator generator
-        +forward(src, tgt, src_mask, tgt_mask)
-    }
-
-    class Attention {
-        &lt;&lt;interface&gt;&gt;
-        +forward(query, key, value, mask)
-    }
-
-    class PositionalEncoding {
-        &lt;&lt;interface&gt;&gt;
-        +forward(x)
-    }
-
-    Attention &lt;|-- AbsoluteMultiHeadedAttention
-    Attention &lt;|-- RotaryMultiHeadAttention
-    Attention &lt;|-- ALiBiMultiHeadAttention
-    Attention &lt;|-- RelativeGlobalAttention
-
-    PositionalEncoding &lt;|-- AbsolutePositionalEncoding
-    PositionalEncoding &lt;|-- RotaryPositionalEncoding
-    PositionalEncoding &lt;|-- ALiBiPositionalEncoding
-    </pre></section>
+</section>
 <section id="api-reference">
 <h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
 <div class="toctree-wrapper compound">
@@ -368,23 +836,30 @@ window.addEventListener("load", () => mermaid.run());
 </ul>
 </div>
 </section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>See the <a class="reference external" href="https://github.com/A-Elshahawy/flexitransformers/tree/main/examples">examples/</a>
+directory for end-to-end runnable scripts covering all architectures, PE types,
+output heads, save/load, and custom plugins.</p>
+</section>
 <section id="contributing">
 <h2>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Fork the repository</p></li>
-<li><p>Create feature branch</p></li>
-<li><p>Submit PR with tests and documentation</p></li>
-<li><p>Follow PEP8 and type hinting guidelines</p></li>
+<li><p>Create a feature branch: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">feature/your-feature</span></code></p></li>
+<li><p>Follow existing code style (ruff, mypy, type annotations)</p></li>
+<li><p>Write tests for new functionality</p></li>
+<li><p>Submit a pull request with a clear description</p></li>
 </ol>
 </section>
 <section id="license">
 <h2>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
-<p>MIT License - See full <a class="reference external" href="https://github.com/A-Elshahawy/flexitransformers/blob/main/LICENSE">license text</a></p>
+<p>MIT License — see <a class="reference external" href="https://github.com/A-Elshahawy/flexitransformers/blob/main/LICENSE">license text</a>.</p>
 </section>
 <section id="acknowledgments">
 <h2>Acknowledgments<a class="headerlink" href="#acknowledgments" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Original Transformer paper “Attention Is All You Need”</p></li>
+<li><p>“Attention Is All You Need” — Vaswani et al. (2017)</p></li>
 <li><p>Hugging Face Transformers for architectural inspiration</p></li>
 <li><p>PyTorch community for foundational components</p></li>
 </ul>
