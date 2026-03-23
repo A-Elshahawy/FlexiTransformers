@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flexitransformers"
-version = "0.2.1"
+version = "0.3.0"
 
 description = """
             This repository provides a flexible and modular implementation of the Transformer architecture,
@@ -51,9 +51,10 @@ dev = [
 "Homepage" = "https://github.com/A-Elshahawy/FlexiTransformers"
 "Bug Tracker" = "https://github.com/A-Elshahawy/FlexiTransformers/issues"
 
-# Correct package structure based on directory layout
-[tool.setuptools]
-packages = ["flexit"] 
+# Auto-discover all flexit subpackages
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flexit*"]
 
 # Include package data
 [tool.setuptools.package-data]
@@ -76,7 +77,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "N", "UP","W", "C4", "RUF", "SIM"]
-ignore = ["UP008", "N812", "N806", "E701", "UP035", "F401"]
+ignore = ["UP008", "N812", "N806", "E701", "UP035", "N802"]
 fixable = ["ALL"]
 
 [tool.ruff.format]
@@ -92,6 +93,11 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+# PyTorch tensor ops return Any without stubs — suppress the false-positive cascade
+module = "flexit.*"
+warn_return_any = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -109,4 +115,3 @@ dev = [
     "sphinx-rtd-theme>=3.0.2",
     "sphinxcontrib-mermaid>=1.0.0",
 ]
-

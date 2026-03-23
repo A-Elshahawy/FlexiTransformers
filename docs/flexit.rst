@@ -1,99 +1,99 @@
 flexit package
 ==============
 
-Submodules
-----------
+Subpackages
+-----------
 
-flexit.attention module
------------------------
+flexit.attention
+~~~~~~~~~~~~~~~~
 
 .. automodule:: flexit.attention
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.callbacks module
------------------------
+flexit.attention.positional
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: flexit.callbacks
+.. automodule:: flexit.attention.positional
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.configs module
----------------------
+flexit.blocks
+~~~~~~~~~~~~~
 
-.. automodule:: flexit.configs
+.. automodule:: flexit.blocks
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.core module
-------------------
+flexit.config
+~~~~~~~~~~~~~
+
+.. automodule:: flexit.config
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+flexit.core
+~~~~~~~~~~~
 
 .. automodule:: flexit.core
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.factory module
----------------------
+flexit.factory
+~~~~~~~~~~~~~~
 
 .. automodule:: flexit.factory
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.layers module
---------------------
+flexit.inference
+~~~~~~~~~~~~~~~~
+
+.. automodule:: flexit.inference
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+flexit.layers
+~~~~~~~~~~~~~
 
 .. automodule:: flexit.layers
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.loss module
-------------------
-
-.. automodule:: flexit.loss
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-flexit.models module
---------------------
+flexit.models
+~~~~~~~~~~~~~
 
 .. automodule:: flexit.models
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.models\_heads module
----------------------------
+flexit.models.heads
+~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: flexit.models_heads
+.. automodule:: flexit.models.heads
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.pos\_embeddings module
------------------------------
+flexit.training
+~~~~~~~~~~~~~~~
 
-.. automodule:: flexit.pos_embeddings
+.. automodule:: flexit.training
    :members:
    :show-inheritance:
    :undoc-members:
 
-flexit.train module
--------------------
-
-.. automodule:: flexit.train
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-flexit.utils module
--------------------
+flexit.utils
+~~~~~~~~~~~~
 
 .. automodule:: flexit.utils
    :members:
