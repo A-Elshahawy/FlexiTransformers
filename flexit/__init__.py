@@ -32,7 +32,16 @@ from .core import (
 )
 from .core.feedforward import create_feedforward
 from .factory import TransformerFactory, create_model
-from .inference import DecoderStrategy, EncoderDecoderStrategy, greedy_decode
+from .inference import (
+    DecoderOnlyStrategy,
+    DecoderStrategy,
+    EncoderDecoderStrategy,
+    greedy_decode,
+    sample_decode,
+    temperature_sample,
+    top_k_sample,
+    top_p_sample,
+)
 from .layers import (
     CausalDecoderLayer,
     CrossAttentionDecoderLayer,
@@ -96,7 +105,8 @@ __all__ = [
     'CrossAttentionDecoder',
     'CrossAttentionDecoderLayer',
     'DecoderOnlyModel',
-    # Inference
+    # Inference — greedy
+    'DecoderOnlyStrategy',
     'DecoderStrategy',
     'EarlyStoppingCallback',
     'EmbeddingWithPE',
@@ -155,5 +165,10 @@ __all__ = [
     'lr_step',
     'register_pe',
     'run_epoch',
+    # Inference — sampling
+    'sample_decode',
     'subsequent_mask',
+    'temperature_sample',
+    'top_k_sample',
+    'top_p_sample',
 ]
